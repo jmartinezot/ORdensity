@@ -166,6 +166,6 @@ setMethod("compute.findDE",
 		}
 	)
 
-a <- findDE(positive = matrix(rnorm(500), nrow=50, ncol=10), negative = matrix(rnorm(500), nrow=50, ncol=10))
-a <- compute.findDE(a)
+# a <- findDE(positive = matrix(rnorm(500), nrow=50, ncol=10), negative = matrix(rnorm(500), nrow=50, ncol=10))
+# a <- compute.findDE(a)
 
