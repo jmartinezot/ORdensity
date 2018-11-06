@@ -1,6 +1,10 @@
+#' An S4 class to represent a bank account.
+#'
+#' @slot positive A length-one numeric vector
+#' @slot negative A length-one numeric vector
 findDE <- setClass(
 	"findDE",
-	slots = c(positive="matrix", negative="matrix", .out="list")
+	slots = c(positive="matrix", negative="matrix", out="list")
 )
 
 setValidity("findDE", function(object) {
@@ -21,6 +25,14 @@ setValidity("findDE", function(object) {
 	if (valid) TRUE else msg
 	}
 	)
+
+setMethod("initialize", "findDE", function(.Object, positive, negative, out) {
+  .Object@positive <- positive
+  .Object@negative <- negative
+  # validObject(.Object)
+  .Object@out <- compute.findDE(.Object)
+  .Object
+})
 
 setMethod("show",
 	signature = "findDE",
@@ -159,10 +171,10 @@ setMethod("compute.findDE",
 		   genes <- (1:G)[suspicious]
 		   res <- cbind(genes, OR[suspicious], segununiforme, auxx, aux[, -1])
 		   row.names(res) <- NULL
-		   colnames(res) <- c("id", "OR", "DifExp",  "minFP", "mediaFP", "maxFP", "density", "radio")
+		   colnames(res) <- c("id", "OR", "DifExp",  "minFP", "meanFP", "maxFP", "density", "radio")
 		   oo <- order(res[, 3], -res[, 2])
-		   object@.out <- list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0))
-		   object
+		   object@out <- list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0))
+		   # object
 		}
 	)
 
