@@ -38,6 +38,7 @@ setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR,
   require(cluster)
   .Object@clustering2 <- pam(dist(scale(.Object@char)), 2)$clustering
   .Object@clustering4 <- pam(dist(scale(.Object@char)), 4)$clustering
+  .Object
 })
 
 setMethod("show",
