@@ -7,40 +7,6 @@ findDE <- setClass(
 	slots = c(positive="matrix", negative="matrix", out="list", OR="numeric", FP="numeric", dFP="numeric", char="data.frame", clustering2="integer", clustering4="integer")
 )
 
-setValidity("findDE", function(object) {
-	valid <- TRUE
-	msg <- NULL
-	if (length(object@positive) == 0) {
-		valid <- FALSE
-		msg <- c(msg, "There is no positive data")
-		}
-	if (length(object@negative) == 0) {
-		valid <- FALSE
-		msg <- c(msg, "There is no negative data")
-		}
-        if (nrow(object@positive) != nrow(object@negative)) {
-		valid <- FALSE
-		msg <- c(msg, "Positive and negative number of rows do not match")
-		}
-	if (valid) TRUE else msg
-	}
-	)
-
-setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR, FP, dFP, char, clustering2, clustering4) {
-  .Object@positive <- positive
-  .Object@negative <- negative
-  # validObject(.Object)
-  .Object@out <- compute.findDE(.Object)
-  .Object@OR <- .Object@out$summary[, "OR"]
-  .Object@FP <- .Object@out$summary[, "meanFP"]
-  .Object@dFP <- .Object@out$summary[, "density"]
-  .Object@char <- data.frame(.Object@OR, .Object@FP, .Object@dFP)
-  require(cluster)
-  .Object@clustering2 <- pam(dist(scale(.Object@char)), 2)$clustering
-  .Object@clustering4 <- pam(dist(scale(.Object@char)), 4)$clustering
-  .Object
-})
-
 setMethod("show",
 	signature = "findDE",
 	definition = function(object) {
@@ -235,3 +201,36 @@ setMethod("compute.findDE",
 # a <- findDE(positive = matrix(rnorm(500), nrow=50, ncol=10), negative = matrix(rnorm(500), nrow=50, ncol=10))
 # a <- compute.findDE(a)
 
+setValidity("findDE", function(object) {
+  valid <- TRUE
+  msg <- NULL
+  if (length(object@positive) == 0) {
+    valid <- FALSE
+    msg <- c(msg, "There is no positive data")
+  }
+  if (length(object@negative) == 0) {
+    valid <- FALSE
+    msg <- c(msg, "There is no negative data")
+  }
+  if (nrow(object@positive) != nrow(object@negative)) {
+    valid <- FALSE
+    msg <- c(msg, "Positive and negative number of rows do not match")
+  }
+  if (valid) TRUE else msg
+}
+)
+
+setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR, FP, dFP, char, clustering2, clustering4) {
+  .Object@positive <- positive
+  .Object@negative <- negative
+  # validObject(.Object)
+  .Object@out <- compute.findDE(.Object)
+  .Object@OR <- .Object@out$summary[, "OR"]
+  .Object@FP <- .Object@out$summary[, "meanFP"]
+  .Object@dFP <- .Object@out$summary[, "density"]
+  .Object@char <- data.frame(.Object@OR, .Object@FP, .Object@dFP)
+  require(cluster)
+  .Object@clustering2 <- pam(dist(scale(.Object@char)), 2)$clustering
+  .Object@clustering4 <- pam(dist(scale(.Object@char)), 4)$clustering
+  .Object
+})
