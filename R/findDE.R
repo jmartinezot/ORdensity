@@ -4,7 +4,7 @@
 #' @slot negative A length-one numeric vector
 findDE <- setClass(
 	"findDE",
-	slots = c(positive="matrix", negative="matrix", out="list")
+	slots = c(positive="matrix", negative="matrix", out="list", OR="numeric", FP="numeric", dFP="numeric", char="data.frame", clustering2="integer", clustering4="integer")
 )
 
 setValidity("findDE", function(object) {
@@ -26,12 +26,18 @@ setValidity("findDE", function(object) {
 	}
 	)
 
-setMethod("initialize", "findDE", function(.Object, positive, negative, out) {
+setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR, FP, dFP, char, clustering2, clustering4) {
   .Object@positive <- positive
   .Object@negative <- negative
   # validObject(.Object)
   .Object@out <- compute.findDE(.Object)
-  .Object
+  .Object@OR <- .Object@out$summary[, "OR"]
+  .Object@FP <- .Object@out$summary[, "meanFP"]
+  .Object@dFP <- .Object@out$summary[, "density"]
+  .Object@char <- data.frame(.Object@OR, .Object@FP, .Object@dFP)
+  require(cluster)
+  .Object@clustering2 <- pam(dist(scale(.Object@char)), 2)$clustering
+  .Object@clustering4 <- pam(dist(scale(.Object@char)), 4)$clustering
 })
 
 setMethod("show",
@@ -42,6 +48,53 @@ setMethod("show",
 		}
 	)
 
+setGeneric("summaries", function(object, ...) standardGeneric("summaries"))
+
+setMethod("summaries",
+  signature = "findDE",
+  definition = function(object){
+    list("summaryOR"=object@OR,
+      "summarymeanFP"=object@FP,
+      "summarydFP"=object@dFP)
+    }
+  )
+
+setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
+
+setMethod("plotFPvsOR",
+  signature = "findDE",
+  definition = function(object){
+    plot(object@FP, object@OR, type="n")
+    points(object@FP, object@OR, cex=1/(0.5+object@dFP))
+    }
+  )
+
+setGeneric("plotclusters", function(object, ...) standardGeneric("plotclusters"))
+
+setMethod("plotclusters",
+  signature = "findDE",
+  definition = function(object){
+    library(cluster)
+    s <- rep(NA, 10)
+    for (k in 2:10)
+    {
+      aux <- pam(dist(scale(object@char)), k)
+      s[k] <- mean(silhouette(aux)[, "sil_width"])
+    }
+    plot(s, type="b", ylim=c(0,1))
+  }
+  )
+
+setGeneric("clusplotk", function(object, k, ...) standardGeneric("clusplotk"))
+
+setMethod("clusplotk",
+  signature = "findDE",
+  definition = function(object, k){
+    aa <- pam(dist(scale(object@char)), k)
+    clusplot(aa)
+  }
+  )
+          
 setGeneric("compute.findDE", function(object, ...) standardGeneric("compute.findDE"))
 
 setMethod("compute.findDE", 

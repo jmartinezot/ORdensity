@@ -16,6 +16,7 @@ library('findDE')
 
 installing from local source
 
+remove.packages('findDE')
 install.packages("/home/otzeta/Github/findDE", repos = NULL, type = "source")
 library('findDE')
 
@@ -31,7 +32,13 @@ negative <- as.matrix(y)
 randomA <- matrix(rnorm(30*100), nrow = 100)
 randomB <- matrix(rnorm(30*100), nrow = 100)
 myfindDE <- new("findDE", positive = positive, negative = negative)
-myfindDE <- new("findDE", positive = randomA, negative = randomB)
+# myfindDE <- new("findDE", positive = randomA, negative = randomB)
+
+summaries(myfindDE)
+plotFPvsOR(myfindDE)
+plotclusters(myfindDE)
+clusplotk(myfindDE, 2)
+clusplotk(myfindDE, 4)
 
 let us see what it contains
 myfindDE@positive
@@ -58,6 +65,7 @@ for (k in 2:10)
   s[k] <- mean(silhouette(aux)[, "sil_width"])
 }
 plot(s, type="b", ylim=c(0,1))
+
 # Try 2, 3, and 4 clusters
 k <- 4
 clustering <- pam(dist(scale(char)), k)$clustering
