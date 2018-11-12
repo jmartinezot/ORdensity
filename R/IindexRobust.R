@@ -1,3 +1,15 @@
+#' @title 
+#' IindexRobust
+#'
+#' @description
+#' IindexRobust
+#' 
+#' @name IindexRobust
+#' 
+#' @author Itziar Irigoien, Concepcion Arenas, Jose Maria Martinez-Otzeta
+#' 
+#' @export
+
 IindexRobust <- function(di, vg){
 # Depth RObust index of i in C: IRobust(i) = [1 + proxiRobust(i,C)/2VRobust(C)]^{-1}
 # Input:

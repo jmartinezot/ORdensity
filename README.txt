@@ -1,5 +1,25 @@
 Process:
 
+To parallelize:
+
+library(foreach)
+library(bigstatsr)
+
+example parallelizing:
+
+library(foreach)
+cl <- parallel::makeCluster(2)
+doParallel::registerDoParallel(cl)
+a <- foreach(i = 1:3, .combine = 'c') %dopar% {
+  sqrt(i)
+}
+parallel::stopCluster(cl)
+
+To generate documentation:
+
+setwd('/home/otzeta/Github/findDE/')
+devtools::document() 
+
 Remove the package from the current installation using
 
 sudo R
@@ -24,7 +44,7 @@ remove all variables in environment
 
 rm(list=ls())
 
-initialize an findDE object
+initialize a findDE object
 x <- example[, 3:32]
 y <- example[, 33:62]
 positive <- as.matrix(x)

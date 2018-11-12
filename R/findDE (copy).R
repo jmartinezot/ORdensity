@@ -69,41 +69,6 @@ setMethod("clusplotk",
     clusplot(aa)
   }
   )
-
-
-setGeneric("bootstrap", function(object, N, N1, scale, weights, G, p, ...) standardGeneric("bootstrap"))
-
-setMethod("bootstrap",
-  signature = "findDE",
-  definition = function(object, N, N1, scale, weights, G, p){
-	s1 <- sample(1:N, N1, replace=FALSE)
-	s2 <- (1:N)[-s1]
-	aux1 <- z[, s1]
-	aux2 <- z[, s2]
-
-
-	qx.b <- t(apply(aux1, 1, quantile, probs=c(0.25, 0.5, 0.75))) 
-	#    mx.b <- apply(aux1, 1, mean)
-	qy.b <- t(apply(aux2, 1, quantile, probs=c(0.25, 0.5, 0.75)))  
-	#   my.b <- apply(aux2, 1, mean)
-	mz <- cbind(qx.b - qy.b) #, mx.b-my.b)
-
-	if(scale)
-	{
-	RIx.b <- qx.b[,3]-qx.b[,1]
-	RIy.b <- qy.b[,3]-qy.b[,1]
-	maxRI.b <- apply(cbind(RIx.b, RIy.b), 1, max)
-	mz <- mz/maxRI.b
-	}
-	mv.null[ , ,b] <- mz*matrix(rep(weights, G), byrow=TRUE, ncol=p)
-
-	#D0 <- as.matrix(ICGE::dgower(mz, type=list(cuant=1:p)))
-	D0 <- as.matrix(dist(mv.null[,,b]))
-	vgR0 <- median(D0^2)/2
-	I <- apply(D0, 1,  IindexRobust, vg=vgR0)
-	ORnull[, b] <- 1/I 
-  }
-  )
           
 setGeneric("compute.findDE", function(object, ...) standardGeneric("compute.findDE"))
 
@@ -151,42 +116,37 @@ setMethod("compute.findDE",
 		  z <- cbind(x, y)
 		  ORnull <- matrix(0, nrow=G, ncol=B)
 		  mv.null <- array(0, dim=c(G, p, B))
-		  
-		  require(foreach)
-		  require(bigstatsr)
-	    nproc <- parallel::detectCores()
-		  cl <- parallel::makeCluster(nproc)
-		  doParallel::registerDoParallel(cl)
-      foreach(b = 1:B) %dopar% {
-  			s1 <- sample(1:N, N1, replace=FALSE)
-  			s2 <- (1:N)[-s1]
-  			aux1 <- z[, s1]
-  			aux2 <- z[, s2]
-  
-  
-  			qx.b <- t(apply(aux1, 1, quantile, probs=c(0.25, 0.5, 0.75))) 
-  			#    mx.b <- apply(aux1, 1, mean)
-  			qy.b <- t(apply(aux2, 1, quantile, probs=c(0.25, 0.5, 0.75)))  
-  			#   my.b <- apply(aux2, 1, mean)
-  			mz <- cbind(qx.b - qy.b) #, mx.b-my.b)
-  
-  			if(scale)
-  			{
-  			RIx.b <- qx.b[,3]-qx.b[,1]
-  			RIy.b <- qy.b[,3]-qy.b[,1]
-  			maxRI.b <- apply(cbind(RIx.b, RIy.b), 1, max)
-  			mz <- mz/maxRI.b
-  			}
-  			mv.null[ , ,b] <- mz*matrix(rep(weights, G), byrow=TRUE, ncol=p)
-  
-  			#D0 <- as.matrix(ICGE::dgower(mz, type=list(cuant=1:p)))
-  			D0 <- as.matrix(dist(mv.null[,,b]))
-  			vgR0 <- median(D0^2)/2
-  			I <- apply(D0, 1,  IindexRobust, vg=vgR0)
-  			ORnull[, b] <- 1/I
-		  }
-      parallel::stopCluster(cl)
-		  })
+		  for (b in 1:B)
+		  {
+		    s1 <- sample(1:N, N1, replace=FALSE)
+		    s2 <- (1:N)[-s1]
+		    aux1 <- z[, s1]
+		    aux2 <- z[, s2]
+		    
+		   
+		    qx.b <- t(apply(aux1, 1, quantile, probs=c(0.25, 0.5, 0.75))) 
+		#    mx.b <- apply(aux1, 1, mean)
+		    qy.b <- t(apply(aux2, 1, quantile, probs=c(0.25, 0.5, 0.75)))  
+		 #   my.b <- apply(aux2, 1, mean)
+		    mz <- cbind(qx.b - qy.b) #, mx.b-my.b)
+		    
+		    if(scale)
+		    {
+		      RIx.b <- qx.b[,3]-qx.b[,1]
+		      RIy.b <- qy.b[,3]-qy.b[,1]
+		      maxRI.b <- apply(cbind(RIx.b, RIy.b), 1, max)
+		      mz <- mz/maxRI.b
+		    }
+		    mv.null[ , ,b] <- mz*matrix(rep(weights, G), byrow=TRUE, ncol=p)
+		   
+		       
+		    
+		    #D0 <- as.matrix(ICGE::dgower(mz, type=list(cuant=1:p)))
+		    D0 <- as.matrix(dist(mv.null[,,b]))
+		    vgR0 <- median(D0^2)/2
+		    I <- apply(D0, 1,  IindexRobust, vg=vgR0)
+		    ORnull[, b] <- 1/I  
+		  } })
 		  
 		  if (show_time) {print('d'); print(d)}
 		  
