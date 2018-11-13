@@ -109,7 +109,7 @@ setGeneric("compute.findDE", function(object, ...) standardGeneric("compute.find
 
 setMethod("compute.findDE", 
 	signature = "findDE",
-	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), weights=c(1/4,1/2,1/4), show_time=FALSE) {
+	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), weights=c(1/4,1/2,1/4), show_time=TRUE) {
 		  a <- system.time ({
 	    x <- as.matrix(object@positive)
 		  y <- as.matrix(object@negative)
@@ -117,6 +117,9 @@ setMethod("compute.findDE",
 		  N1 <- dim(x)[2] 
 		  N2 <- dim(y)[2]
 		  N <- N1 + N2 })
+		  
+		  gloN <<- N
+		  gloN1 <<- N1
 		  
 		  if (show_time) {print('a'); print(a)}
 		  
@@ -153,39 +156,50 @@ setMethod("compute.findDE",
 		  mv.null <- array(0, dim=c(G, p, B))
 		  
 		  require(foreach)
-		  require(bigstatsr)
+		  # require(bigstatsr)
 	    nproc <- parallel::detectCores()
 		  cl <- parallel::makeCluster(nproc)
 		  doParallel::registerDoParallel(cl)
-      foreach(b = 1:B) %dopar% {
+      res_par <- foreach(b = 1:B, .combine = 'c') %dopar% {
   			s1 <- sample(1:N, N1, replace=FALSE)
   			s2 <- (1:N)[-s1]
   			aux1 <- z[, s1]
   			aux2 <- z[, s2]
   
-  
-  			qx.b <- t(apply(aux1, 1, quantile, probs=c(0.25, 0.5, 0.75))) 
+  			qx.b <- t(apply(aux1, 1, quantile, probs=c(0.25, 0.5, 0.75))) # se puede tener antes
   			#    mx.b <- apply(aux1, 1, mean)
-  			qy.b <- t(apply(aux2, 1, quantile, probs=c(0.25, 0.5, 0.75)))  
+  			qy.b <- t(apply(aux2, 1, quantile, probs=c(0.25, 0.5, 0.75))) # se puede tener antes
   			#   my.b <- apply(aux2, 1, mean)
   			mz <- cbind(qx.b - qy.b) #, mx.b-my.b)
   
   			if(scale)
   			{
-  			RIx.b <- qx.b[,3]-qx.b[,1]
-  			RIy.b <- qy.b[,3]-qy.b[,1]
+  			RIx.b <- qx.b[,3]-qx.b[,1] # se puede tener antes
+  			RIy.b <- qy.b[,3]-qy.b[,1] # se puede tener antes
   			maxRI.b <- apply(cbind(RIx.b, RIy.b), 1, max)
   			mz <- mz/maxRI.b
   			}
-  			mv.null[ , ,b] <- mz*matrix(rep(weights, G), byrow=TRUE, ncol=p)
+  			res <- list()
+  			# mv.null[ , ,b] <- mz*matrix(rep(weights, G), byrow=TRUE, ncol=p)
+  			res[[1]] <- mz*matrix(rep(weights, G), byrow=TRUE, ncol=p)
   
   			#D0 <- as.matrix(ICGE::dgower(mz, type=list(cuant=1:p)))
-  			D0 <- as.matrix(dist(mv.null[,,b]))
+  			# D0 <- as.matrix(dist(mv.null[,,b]))
+  			D0 <- as.matrix(dist(res[[1]]))
   			vgR0 <- median(D0^2)/2
   			I <- apply(D0, 1,  IindexRobust, vg=vgR0)
-  			ORnull[, b] <- 1/I
+  			# ORnull[, b] <- 1/I
+  			res[[2]] <- 1/I
+  			res
 		  }
       parallel::stopCluster(cl)
+      
+      glo <<- res_par
+      
+      for (b in 1:B) {
+        mv.null[ , ,b] <- res_par[[b*2-1]]
+        ORnull[, b] <- res_par[[b*2]]
+      }
 		  })
 		  
 		  if (show_time) {print('d'); print(d)}
@@ -211,6 +225,8 @@ setMethod("compute.findDE",
 		  nnull <- dim(selec.null)[1]
 		#
 		  mirar <- sample(1:fold, nnull, replace=TRUE) # 
+		  # print(ns)
+		  # print(fold)
 		  apilar <- array(0, dim=c(ns, 3, fold)) })
 		  
 		  if (show_time) {print('e'); print(e)}
@@ -262,12 +278,16 @@ setMethod("compute.findDE",
 		   row.names(res) <- NULL
 		   colnames(res) <- c("id", "OR", "DifExp",  "minFP", "meanFP", "maxFP", "density", "radio")
 		   oo <- order(res[, 3], -res[, 2])
+		   # print(res[oo,])
+		   # print(ns)
+		   # print(c(ps, p0))
+		   # print(list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0))) 
+		   })
+		   
+		   if (show_time) {print('g'); print(g)}
+		  
 		   object@out <- list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0))
 		   # object
-		  })
-		  
-		  if (show_time) {print('g'); print(g)}
-		  
 		}
 	)
 

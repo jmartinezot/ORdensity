@@ -8,7 +8,8 @@ library(bigstatsr)
 example parallelizing:
 
 library(foreach)
-cl <- parallel::makeCluster(2)
+nproc <- parallel::detectCores()
+cl <- parallel::makeCluster(nproc)
 doParallel::registerDoParallel(cl)
 a <- foreach(i = 1:3, .combine = 'c') %dopar% {
   sqrt(i)
@@ -118,3 +119,65 @@ ama <- clusplot(aa)
 aux <- prcomp(char, scale=TRUE)
 x <- aux$x[, 1:2]
 getAnywhere(clusplot.default)
+
+library(foreach)
+nproc <- parallel::detectCores()
+cl <- parallel::makeCluster(nproc)
+doParallel::registerDoParallel(cl)
+a <- foreach(i = 1:3, .combine = 'c') %dopar% {
+  # sqrt(i)
+  l <- list()
+  m <- matrix(1:50, nrow=10)
+  l[[1]] <- m
+  l[[2]] <- 14
+  l
+}
+parallel::stopCluster(cl)
+
+
+check_complexity <- function(n) {
+	m <<- matrix(runif(n*3, min = -2, max = 2), nrow=n)
+	print(system.time(D0 <<- as.matrix(dist(m))))
+	print(system.time(vgR0 <<- median(D0^2)/2))
+	print(system.time(I <<- apply(D0, 1,  IindexRobust, vg=vgR0)))
+	print(system.time(1/I))
+}
+
+format(object.size(D0), units = "GB", standard = "SI")
+
+> check_complexity(10000)
+   user  system elapsed 
+  4.821   0.850   5.670 
+   user  system elapsed 
+  2.523   0.471   2.994 
+   user  system elapsed 
+  5.146   0.218   5.363 
+   user  system elapsed 
+  0.000   0.000   0.001 
+> format(object.size(D0), units = "MB", standard = "SI")
+[1] "801.1 MB"
+> check_complexity(20000)
+   user  system elapsed 
+ 22.440  10.824 938.224 
+   user  system elapsed 
+ 11.102   3.018 128.688 
+    user   system  elapsed 
+  24.326   20.705 1740.560 
+   user  system elapsed 
+      0       0       0 
+> format(object.size(D0), units = "MB", standard = "SI")
+[1] "3202.2 MB"
+
+library(gpuR)
+
+check_complexity_GPU <- function(n) {
+	m <<- matrix(runif(n*3, min = -2, max = 2), nrow=n)
+	gpum <<- gpuMatrix(m, type="double")
+	print(system.time(D0 <<- as.matrix(dist(gpum))))
+	print(system.time(vgR0 <<- median(D0^2)/2))
+	# print(system.time(I <<- apply(D0, 1,  IindexRobust, vg=vgR0)))
+	# print(system.time(1/I))
+}
+
+
+
