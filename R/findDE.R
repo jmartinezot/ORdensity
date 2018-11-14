@@ -9,10 +9,15 @@
 #' 
 #' @author Itziar Irigoien, Concepcion Arenas, Jose Maria Martinez-Otzeta
 #' 
-#' @export
+#' @export summaries
+#' @export plotFPvsOR
+#' @export plotclusters
+#' @export clusplotk
+#' @export compute.findDE
 findDE <- setClass(
 	"findDE",
-	slots = c(positive="matrix", negative="matrix", out="list", OR="numeric", FP="numeric", dFP="numeric", char="data.frame", clustering2="integer", clustering4="integer")
+	slots = c(positive="matrix", negative="matrix", out="list", OR="numeric", FP="numeric", dFP="numeric", char="data.frame", clustering2="integer", clustering4="integer", parallel="logical"),
+	prototype = list(positive=matrix(), negative=matrix(), out=list(), OR=numeric(), FP=numeric(), dFP=numeric(), char=data.frame(), clustering2=integer(), clustering4=integer(), parallel=FALSE)
 )
 
 setMethod("show",
@@ -109,7 +114,7 @@ setGeneric("compute.findDE", function(object, ...) standardGeneric("compute.find
 
 setMethod("compute.findDE", 
 	signature = "findDE",
-	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), weights=c(1/4,1/2,1/4), show_time=TRUE) {
+	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), weights=c(1/4,1/2,1/4), show_time=TRUE, parallel = FALSE) {
 		  a <- system.time ({
 	    x <- as.matrix(object@positive)
 		  y <- as.matrix(object@negative)
@@ -151,10 +156,16 @@ setMethod("compute.findDE",
 		  if (show_time) {print('c'); print(c)}
 		  
 		  d <- system.time ({
+		    print("fgfdgdfgfdg")
 		  z <- cbind(x, y)
+		  print("fgfdgdfgfdg")
 		  ORnull <- matrix(0, nrow=G, ncol=B)
+		  print("fgfdgdfgfdg")
 		  mv.null <- array(0, dim=c(G, p, B))
+		  print("fgfdgdfgfdg")
 		  
+		  if (parallel)
+		  {
 		  require(foreach)
 		  # require(bigstatsr)
 	    nproc <- parallel::detectCores()
@@ -200,6 +211,43 @@ setMethod("compute.findDE",
         mv.null[ , ,b] <- res_par[[b*2-1]]
         ORnull[, b] <- res_par[[b*2]]
       }
+		} # end if
+		else
+		{
+		  print("fgfdgdfgfdg")
+		  for (b in 1:B)
+		  {
+		    print("fsf")
+		    s1 <- sample(1:N, N1, replace=FALSE)
+		    s2 <- (1:N)[-s1]
+		    aux1 <- z[, s1]
+		    aux2 <- z[, s2]
+		    
+		    
+		    qx.b <- t(apply(aux1, 1, quantile, probs=c(0.25, 0.5, 0.75))) 
+		    #    mx.b <- apply(aux1, 1, mean)
+		    qy.b <- t(apply(aux2, 1, quantile, probs=c(0.25, 0.5, 0.75)))  
+		    #   my.b <- apply(aux2, 1, mean)
+		    mz <- cbind(qx.b - qy.b) #, mx.b-my.b)
+		    
+		    if(scale)
+		    {
+		      RIx.b <- qx.b[,3]-qx.b[,1]
+		      RIy.b <- qy.b[,3]-qy.b[,1]
+		      maxRI.b <- apply(cbind(RIx.b, RIy.b), 1, max)
+		      mz <- mz/maxRI.b
+		    }
+		    mv.null[ , ,b] <- mz*matrix(rep(weights, G), byrow=TRUE, ncol=p)
+		    
+		    
+		    
+		    #D0 <- as.matrix(ICGE::dgower(mz, type=list(cuant=1:p)))
+		    D0 <- as.matrix(dist(mv.null[,,b]))
+		    vgR0 <- median(D0^2)/2
+		    I <- apply(D0, 1,  IindexRobust, vg=vgR0)
+		    ORnull[, b] <- 1/I  
+		  }
+		}
 		  })
 		  
 		  if (show_time) {print('d'); print(d)}
@@ -313,11 +361,11 @@ setValidity("findDE", function(object) {
 }
 )
 
-setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR, FP, dFP, char, clustering2, clustering4) {
+setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR, FP, dFP, char, clustering2, clustering4, parallel = .Object@parallel) {
   .Object@positive <- positive
   .Object@negative <- negative
   # validObject(.Object)
-  .Object@out <- compute.findDE(.Object)
+  .Object@out <- compute.findDE(.Object, .Object@parallel)
   .Object@OR <- .Object@out$summary[, "OR"]
   .Object@FP <- .Object@out$summary[, "meanFP"]
   .Object@dFP <- .Object@out$summary[, "density"]
