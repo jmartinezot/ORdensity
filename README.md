@@ -119,10 +119,10 @@ plotclusters(myfindDE)
 ```
 clusplotk(myfindDE, 2)
 ```
-![plot3](/images/clusplot2.png)
+![plot3](/images/clusplotk2.png)
 
 ```
 clusplotk(myfindDE, 4)
 ```
-![plot4](/images/clusplot4.png)
+![plot4](/images/clusplotk4.png)
 
