@@ -107,12 +107,22 @@ $summarydFP
 ```
 plotFPvsOR(myfindDE)
 ```
+
+![plot1](/images/plotFPvsOR.png)
+
+
 ```
 plotclusters(myfindDE)
 ```
+![plot2](/images/plotclusters.png)
+
 ```
 clusplotk(myfindDE, 2)
 ```
+![plot3](/images/clusplot2.png)
+
 ```
 clusplotk(myfindDE, 4)
 ```
+![plot4](/images/clusplot4.png)
+
