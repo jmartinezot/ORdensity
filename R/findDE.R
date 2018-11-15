@@ -16,8 +16,8 @@
 #' @export compute.findDE
 findDE <- setClass(
 	"findDE",
-	slots = c(positive="matrix", negative="matrix", out="list", OR="numeric", FP="numeric", dFP="numeric", char="data.frame", clustering2="integer", clustering4="integer", parallel="logical"),
-	prototype = list(positive=matrix(), negative=matrix(), out=list(), OR=numeric(), FP=numeric(), dFP=numeric(), char=data.frame(), clustering2=integer(), clustering4=integer(), parallel=FALSE)
+	slots = c(positive="matrix", negative="matrix", out="list", OR="numeric", FP="numeric", dFP="numeric", char="data.frame", clustering2="integer", clustering4="integer", verbose="logical", parallel="logical"),
+	prototype = list(positive=matrix(), negative=matrix(), out=list(), OR=numeric(), FP=numeric(), dFP=numeric(), char=data.frame(), clustering2=integer(), clustering4=integer(), verbose=logical(), parallel=logical())
 )
 
 setMethod("show",
@@ -114,7 +114,7 @@ setGeneric("compute.findDE", function(object, ...) standardGeneric("compute.find
 
 setMethod("compute.findDE", 
 	signature = "findDE",
-	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), weights=c(1/4,1/2,1/4), show_time=TRUE, parallel = FALSE) {
+	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), weights=c(1/4,1/2,1/4), verbose=FALSE, parallel = FALSE) {
 		  a <- system.time ({
 	    x <- as.matrix(object@positive)
 		  y <- as.matrix(object@negative)
@@ -126,7 +126,7 @@ setMethod("compute.findDE",
 		  gloN <<- N
 		  gloN1 <<- N1
 		  
-		  if (show_time) {print('a'); print(a)}
+		  if (verbose) {print('a'); print(a)}
 		  
 		  b <- system.time ({
 		  qx <- t(apply(x, 1, quantile, probs=c(0.25, 0.5, 0.75)))
@@ -146,23 +146,19 @@ setMethod("compute.findDE",
 		    mv <- mv/maxRI
 		  } })
 		  
-		  if (show_time) {print('b'); print(b)}
+		  if (verbose) {print('b'); print(b)}
 		  
 		  c <- system.time ({
 		  mv <- mv*matrix(rep(weights, G), byrow=TRUE, ncol=p)
 		  Dxy <- dist(mv) #ICGE::dgower(mv, type=list(cuant=1:p))
 		  })
 		  
-		  if (show_time) {print('c'); print(c)}
+		  if (verbose) {print('c'); print(c)}
 		  
 		  d <- system.time ({
-		    print("fgfdgdfgfdg")
 		  z <- cbind(x, y)
-		  print("fgfdgdfgfdg")
 		  ORnull <- matrix(0, nrow=G, ncol=B)
-		  print("fgfdgdfgfdg")
 		  mv.null <- array(0, dim=c(G, p, B))
-		  print("fgfdgdfgfdg")
 		  
 		  if (parallel)
 		  {
@@ -214,15 +210,12 @@ setMethod("compute.findDE",
 		} # end if
 		else
 		{
-		  print("fgfdgdfgfdg")
 		  for (b in 1:B)
 		  {
-		    print("fsf")
 		    s1 <- sample(1:N, N1, replace=FALSE)
 		    s2 <- (1:N)[-s1]
 		    aux1 <- z[, s1]
 		    aux2 <- z[, s2]
-		    
 		    
 		    qx.b <- t(apply(aux1, 1, quantile, probs=c(0.25, 0.5, 0.75))) 
 		    #    mx.b <- apply(aux1, 1, mean)
@@ -237,8 +230,8 @@ setMethod("compute.findDE",
 		      maxRI.b <- apply(cbind(RIx.b, RIy.b), 1, max)
 		      mz <- mz/maxRI.b
 		    }
-		    mv.null[ , ,b] <- mz*matrix(rep(weights, G), byrow=TRUE, ncol=p)
 		    
+		    mv.null[ , ,b] <- mz*matrix(rep(weights, G), byrow=TRUE, ncol=p)
 		    
 		    
 		    #D0 <- as.matrix(ICGE::dgower(mz, type=list(cuant=1:p)))
@@ -250,7 +243,7 @@ setMethod("compute.findDE",
 		}
 		  })
 		  
-		  if (show_time) {print('d'); print(d)}
+		  if (verbose) {print('d'); print(d)}
 		  
 		# OR values for original data
 		  e <- system.time ({
@@ -277,7 +270,7 @@ setMethod("compute.findDE",
 		  # print(fold)
 		  apilar <- array(0, dim=c(ns, 3, fold)) })
 		  
-		  if (show_time) {print('e'); print(e)}
+		  if (verbose) {print('e'); print(e)}
 		  
 		# Que pasa en la capa 1
 		  f <- system.time ({
@@ -313,7 +306,7 @@ setMethod("compute.findDE",
 		      apilar[ , , j] <- res
 		  } })
 		  
-		  if (show_time) {print(f)}
+		  if (verbose) {print(f)}
 		  
 		  g <- system.time ({
 		   aux <- t(plyr::aaply(apilar, c(2,1), mean))
@@ -332,7 +325,7 @@ setMethod("compute.findDE",
 		   # print(list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0))) 
 		   })
 		   
-		   if (show_time) {print('g'); print(g)}
+		   if (verbose) {print('g'); print(g)}
 		  
 		   object@out <- list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0))
 		   # object
@@ -361,11 +354,13 @@ setValidity("findDE", function(object) {
 }
 )
 
-setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR, FP, dFP, char, clustering2, clustering4, parallel = .Object@parallel) {
+setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR, FP, dFP, char, clustering2, clustering4, verbose = FALSE, parallel = FALSE) {
   .Object@positive <- positive
   .Object@negative <- negative
   # validObject(.Object)
-  .Object@out <- compute.findDE(.Object, .Object@parallel)
+  .Object@verbose <- verbose
+  .Object@parallel <- parallel
+  .Object@out <- compute.findDE(.Object, verbose = .Object@verbose, parallel = .Object@parallel)
   .Object@OR <- .Object@out$summary[, "OR"]
   .Object@FP <- .Object@out$summary[, "meanFP"]
   .Object@dFP <- .Object@out$summary[, "density"]
