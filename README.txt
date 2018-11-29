@@ -179,5 +179,46 @@ check_complexity_GPU <- function(n) {
 	# print(system.time(1/I))
 }
 
+veryimportant <- out$summary[clustering==1, "id"]
+table(dat$DEgen[veryimportant])
+table( dat$gap[veryimportant])
+important <- out$summary[clustering==2, "id"]
+table(dat$DEgen[important])
+table( dat$gap[important])
+doubtfull <- out$summary[clustering==3, "id"]
+table(dat$DEgen[doubtfull])
+table( dat$gap[doubtfull])
+nonimportant <- out$summary[clustering==4, "id"]
+table(dat$DEgen[nonimportant])
 
+clustering <- pam(dist(scale(char)), 2)$clustering
+veryimportant <- out$summary[clustering==1, "id"]
+table(dat$DEgen[veryimportant])
+table( dat$gap[veryimportant])
+nonimportant <- out$summary[clustering==2, "id"]
+table(dat$DEgen[nonimportant])
+
+
+out <- myfindDE@out
+clustering2 <- myfindDE@clustering2
+veryimportant <- out$summary[clustering2==1, "id"]
+table(example$DEgen[veryimportant])
+table(example$gap[veryimportant])
+nonimportant <- out$summary[clustering2==2, "id"]
+table(example$DEgen[nonimportant])
+table(example$gap[nonimportant])
+
+clustering4 <- myfindDE@clustering4
+veryimportant <- out$summary[clustering4==1, "id"]
+table(example$DEgen[veryimportant])
+table(example$gap[veryimportant])
+important <- out$summary[clustering4==2, "id"]
+table(example$DEgen[important])
+table(example$gap[important])
+doubtful <- out$summary[clustering4==3, "id"]
+table(example$DEgen[doubtful])
+table(example$gap[doubtful])
+nonimportant <- out$summary[clustering4==4, "id"]
+table(example$DEgen[nonimportant])
+table(example$gap[nonimportant])
 
