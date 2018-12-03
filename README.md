@@ -6,7 +6,13 @@ In this repository is located the R package that implements the statistical meth
 
 An important issue in microarray data is to select, from thousands of genes, a small number of informative differentially expressed (DE) genes which may be key elements for a disease. If each gene is analyzed individually, there is a big number of hypotheses to test and a multiple comparison correction method must be used. Consequently, the resulting cut-off value may be too small. Moreover, an important issue is the selection’s replicability of the DE genes. We present a new method, called ORdensity, to obtain a reproducible selection of DE genes. It takes into account the relation between all genes and it is not a gene-by-gene approach, unlike the usually applied techniques to DE gene selection.
 
-The proposed method returns three measures, related to the concepts of outlier and density of false positives in a neighbourhood, which allow us to identify the DE genes with high classification accuracy. To assess the performance of ORdensity, we used simulated microarray data and four real microarray cancer data sets. The results indicated that the method correctly detects the DE genes; it is competitive with other well accepted methods; the list of DE genes that it obtains is useful for the correct classification or diagnosis of new future samples and, in general, it is more stable than other procedures.
+The proposed method returns three measures, related to the concepts of outlier and density of false positives in a neighbourhood, which allow us to identify the DE genes with high classification accuracy. The first measure is a statistic called OR, introduced in \[1\]\[2\]
+
+## References
+
+\[1\] [Arenas C, Toma C, Cormand B, Irigoien I. Identifying extreme observations, outliers and noise in clinical and genetic data. Current Bioinformatics 2017;12(2):101–17.](http://www.eurekaselect.com/142998/article)
+
+\[2\] [Arenas C, Irigoien I, Mestres F, Toma C, Cormand B. Extreme observations in biomedical data. In: Ainsbury EA, Calle ML, Cardis E, et al., editors. Extended Abstracts Fall 2015. Trends in Mathematics vol 7. Birkhäuser, Cham: Springer; 2017. p. 3–8.] (https://link.springer.com/chapter/10.1007/978-3-319-55639-0_1)
 
 ## Installation
 
