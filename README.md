@@ -10,9 +10,9 @@ The proposed method returns three measures, related to the concepts of outlier a
 
 ## References
 
-\[1\] [Arenas C, Toma C, Cormand B, Irigoien I. Identifying extreme observations, outliers and noise in clinical and genetic data. Current Bioinformatics 2017;12(2):101–17.](http://www.eurekaselect.com/142998/article)
+\[1\] Arenas C, Toma C, Cormand B, Irigoien I. [Identifying extreme observations, outliers and noise in clinical and genetic data.](http://www.eurekaselect.com/142998/article) Current Bioinformatics 2017;12(2):101–17.
 
-\[2\] [Arenas C, Irigoien I, Mestres F, Toma C, Cormand B. Extreme observations in biomedical data. In: Ainsbury EA, Calle ML, Cardis E, et al., editors. Extended Abstracts Fall 2015. Trends in Mathematics vol 7. Birkhäuser, Cham: Springer; 2017. p. 3–8.] (https://link.springer.com/chapter/10.1007/978-3-319-55639-0_1)
+\[2\] Arenas C, Irigoien I, Mestres F, Toma C, Cormand B. [Extreme observations in biomedical data.](https://link.springer.com/chapter/10.1007/978-3-319-55639-0_1) In: Ainsbury EA, Calle ML, Cardis E, et al., editors. Extended Abstracts Fall 2015. Trends in Mathematics vol 7. Birkhäuser, Cham: Springer; 2017. p. 3–8.
 
 ## Installation
 
