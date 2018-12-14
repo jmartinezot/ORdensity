@@ -327,7 +327,7 @@ setMethod("compute.findDE",
 		   
 		   if (verbose) {print('g'); print(g)}
 		  
-		   object@out <- list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0))
+		   object@out <- list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0), "res"=res)
 		   # object
 		}
 	)
@@ -370,3 +370,19 @@ setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR,
   .Object@clustering4 <- pam(dist(scale(.Object@char)), 4)$clustering
   .Object
 })
+
+setGeneric("findDEgenes", function(object, ...) standardGeneric("findDEgenes"))
+
+setMethod("findDEgenes",
+          signature = "findDE",
+          definition = function(object){
+            s <- rep(NA, 10)
+            for (k in 2:10)
+            {
+              aux <- pam(dist(scale(object@char)), k)
+              s[k] <- mean(silhouette(aux)[, "sil_width"])
+            }
+            best_k <- which(s == max(s, na.rm = TRUE))
+            clustering <- pam(dist(scale(object@char)), best_k)$clustering
+          }
+)
