@@ -327,7 +327,7 @@ setMethod("compute.findDE",
 		   
 		   if (verbose) {print('g'); print(g)}
 		  
-		   object@out <- list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0), "res"=res)
+		   object@out <- list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0))
 		   # object
 		}
 	)
@@ -384,5 +384,8 @@ setMethod("findDEgenes",
             }
             best_k <- which(s == max(s, na.rm = TRUE))
             clustering <- pam(dist(scale(object@char)), best_k)$clustering
+            veryimportant <- .Object@out$summary[clustering==1, "id"]
+            false_positives <- .Object@out$summary[clustering==best_k, "id"]
+            return("Maximum degree of importance" = veryimportant, "False positives" = false_positives)
           }
 )
