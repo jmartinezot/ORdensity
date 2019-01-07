@@ -54,10 +54,11 @@ randomA <- matrix(rnorm(30*100), nrow = 100)
 randomB <- matrix(rnorm(30*100), nrow = 100)
 myfindDE <- new("findDE", positive = positive, negative = negative, parallel = TRUE)
 out <- myfindDE@out
-res <- as.data.frame(out$res)
-res[order(res$OR, decreasing = TRUE),]
+#res <- as.data.frame(out$res)
+#res[order(res$OR, decreasing = TRUE),]
 char <- myfindDE@char
 myclust <- findDEgenes(myfindDE)
+result <- findDEgenes(myfindDE)
 # myfindDE <- new("findDE", positive = randomA, negative = randomB)
 
 summaries(myfindDE)

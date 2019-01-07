@@ -317,7 +317,7 @@ setMethod("compute.findDE",
 		   genes <- (1:G)[suspicious]
 		   res <- cbind(genes, OR[suspicious], segununiforme, auxx, aux[, -1])
 		   row.names(res) <- NULL
-		   colnames(res) <- c("id", "OR", "DifExp",  "minFP", "meanFP", "maxFP", "density", "radio")
+		   colnames(res) <- c("id", "OR", "DifExp",  "minFP", "meanFP", "maxFP", "density", "radius")
 		   oo <- order(res[, 3], -res[, 2])
 		   # print(res[oo,])
 		   # print(ns)
@@ -384,8 +384,20 @@ setMethod("findDEgenes",
             }
             best_k <- which(s == max(s, na.rm = TRUE))
             clustering <- pam(dist(scale(object@char)), best_k)$clustering
-            veryimportant <- .Object@out$summary[clustering==1, "id"]
-            false_positives <- .Object@out$summary[clustering==best_k, "id"]
-            return("Maximum degree of importance" = veryimportant, "False positives" = false_positives)
+            result_prov <- list()
+            meanOR <- list()
+            for (k in 1:best_k)
+            {
+              result_prov[[k]] <- object@out$summary[clustering==k,]
+              meanOR[[k]] <- mean(result_prov[[k]][,'OR'])
+            }
+            clusters_ordering <- order(as.numeric(meanOR), decreasing = TRUE)
+            clusters <- list()
+            for (k in 1:best_k)
+            {
+              clusters[[k]] <- result_prov[[clusters_ordering[k]]]
+            }
+            cat("The ORdensity method has found that the optimal clustering of the data consists of",best_k,"clusters\n")
+            return(list("clusters"=clusters))
           }
 )
