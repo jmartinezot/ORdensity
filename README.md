@@ -33,7 +33,7 @@ library('findDE')
 
 ## Example
 
-There is a example dataframe called ```example``` shipped with the package. It contains 1000 observations of 62 variables. Each row correspond to a gene and contains 62 values: DEgen, gap and the values for the gene expression in 30 positive cases and in 30 negative cases.
+There is a example dataframe called ```example``` shipped with the package. This file is the result of a simulation of 100 differentially expressed genes in a pool of 1000 genes. It contains 1000 observations of 62 variables. Each row correspond to a gene and contains 62 values: DEgen, gap and the values for the gene expression in 30 positive cases and in 30 negative cases. The DEgen field value is 1 for differentially expressed genes and 0 for those which are not.
 
 First, let us extract the positive and negative cases from the ```example``` database.
 
@@ -53,11 +53,10 @@ By default, no parallelizing is enabled. To enable it, just run instead
 ```
 myfindDE <- new("findDE", positive = positive, negative = negative, parallel = TRUE)
 ```
-There is also a ```verbose``` option, but currently is only intended for information to developers
 
-```
-myfindDE <- new("findDE", positive = positive, negative = negative, parallel = TRUE, verbose = TRUE)
-```
+If the researcher just wants to extract the differentially expressed genes detected by the ORdensity method, a call 
+
+
 When the object is created its statistics are computed, so afterwards it is possible to extract the information and generate several plots with the following instructions
 
 ```
