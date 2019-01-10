@@ -44,7 +44,7 @@ setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
 setMethod("plotFPvsOR",
   signature = "findDE",
   definition = function(object){
-    plot(object@FP, object@OR, type="n")
+    plot(object@FP, object@OR, type="n",main="Potential genes",xlab="FP",ylab="OR")
     points(object@FP, object@OR, cex=1/(0.5+object@dFP))
     }
   )
@@ -61,7 +61,7 @@ setMethod("plotclusters",
       aux <- pam(dist(scale(object@char)), k)
       s[k] <- mean(silhouette(aux)[, "sil_width"])
     }
-    plot(s, type="b", ylim=c(0,1))
+    plot(s, type="b", ylim=c(0,1), main="Clustering goodness", xlab = "K value", ylab = "silhouette")
   }
   )
 
@@ -71,7 +71,7 @@ setMethod("clusplotk",
   signature = "findDE",
   definition = function(object, k){
     aa <- pam(dist(scale(object@char)), k)
-    clusplot(aa)
+    clusplot(aa, main = paste("Clustering with k = ", k))
   }
   )
 
@@ -317,7 +317,7 @@ setMethod("compute.findDE",
 		   genes <- (1:G)[suspicious]
 		   res <- cbind(genes, OR[suspicious], segununiforme, auxx, aux[, -1])
 		   row.names(res) <- NULL
-		   colnames(res) <- c("id", "OR", "DifExp",  "minFP", "meanFP", "maxFP", "density", "radio")
+		   colnames(res) <- c("id", "OR", "DifExp",  "minFP", "meanFP", "maxFP", "density", "radius")
 		   oo <- order(res[, 3], -res[, 2])
 		   # print(res[oo,])
 		   # print(ns)
@@ -370,3 +370,39 @@ setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR,
   .Object@clustering4 <- pam(dist(scale(.Object@char)), 4)$clustering
   .Object
 })
+
+setGeneric("findDEgenes", function(object, ...) standardGeneric("findDEgenes"))
+
+setMethod("findDEgenes",
+          signature = "findDE",
+          definition = function(object){
+            s <- rep(NA, 10)
+            for (k in 2:10)
+            {
+              aux <- pam(dist(scale(object@char)), k)
+              s[k] <- mean(silhouette(aux)[, "sil_width"])
+            }
+            best_k <- which(s == max(s, na.rm = TRUE))
+            clustering <- pam(dist(scale(object@char)), best_k)$clustering
+            result_prov <- list()
+            meanOR <- list()
+            for (k in 1:best_k)
+            {
+              result_prov[[k]] <- object@out$summary[clustering==k,]
+              meanOR[[k]] <- mean(result_prov[[k]][,'OR'])
+            }
+            clusters_ordering <- order(as.numeric(meanOR), decreasing = TRUE)
+            clusters <- list()
+            for (k in 1:best_k)
+            {
+              clusters[[k]] <- result_prov[[clusters_ordering[k]]]
+            }
+            DFgenes <- list()
+            for (k in 1:best_k)
+            {
+              DFgenes[[k]] <- list("cluster_number"=k, "genes"=sort(clusters[[k]][,'id']), "meanOR"=mean(clusters[[k]][,'OR']))
+            }
+            cat("The ORdensity method has found that the optimal clustering of the data consists of",best_k,"clusters\n")
+            return(list("DFgenes"=DFgenes,"clusters"=clusters))
+          }
+)
