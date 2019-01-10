@@ -44,7 +44,7 @@ setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
 setMethod("plotFPvsOR",
   signature = "findDE",
   definition = function(object){
-    plot(object@FP, object@OR, type="n")
+    plot(object@FP, object@OR, type="n",main="Potential genes",xlab="FP",ylab="OR")
     points(object@FP, object@OR, cex=1/(0.5+object@dFP))
     }
   )
@@ -61,7 +61,7 @@ setMethod("plotclusters",
       aux <- pam(dist(scale(object@char)), k)
       s[k] <- mean(silhouette(aux)[, "sil_width"])
     }
-    plot(s, type="b", ylim=c(0,1))
+    plot(s, type="b", ylim=c(0,1), main="Clustering goodness", xlab = "K value", ylab = "silhouette")
   }
   )
 
@@ -71,7 +71,7 @@ setMethod("clusplotk",
   signature = "findDE",
   definition = function(object, k){
     aa <- pam(dist(scale(object@char)), k)
-    clusplot(aa)
+    clusplot(aa, main = paste("Clustering with k = ", k))
   }
   )
 
@@ -397,7 +397,12 @@ setMethod("findDEgenes",
             {
               clusters[[k]] <- result_prov[[clusters_ordering[k]]]
             }
+            DFgenes <- list()
+            for (k in 1:best_k)
+            {
+              DFgenes[[k]] <- list("cluster_number"=k, "genes"=sort(clusters[[k]][,'id']), "meanOR"=mean(clusters[[k]][,'OR']))
+            }
             cat("The ORdensity method has found that the optimal clustering of the data consists of",best_k,"clusters\n")
-            return(list("clusters"=clusters))
+            return(list("DFgenes"=DFgenes,"clusters"=clusters))
           }
 )
