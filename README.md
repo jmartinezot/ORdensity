@@ -93,7 +93,7 @@ we could then take a look to the genes corresponding to the generated clusters
 [[2]]$meanOR
 [1] 10.64626
 ```
-The clusters are ordered in decreasing order according to the value of the mean of the OR statistic. We see that the mean is higher in the first cluster (62.46812) than in the second one (10.64626), which means that the first cluster is more likely to be true differentially expressed genes, and the second one to be composed of false positives. With more clusters, the last ones are likely false negatives.
+The clusters are ordered in decreasing order according to the value of the mean of the OR statistic. We see that the mean is higher in the first cluster (62.46812) than in the second one (10.64626), which means that the first cluster is more likely composed of true differentially expressed genes, and the second one to be composed of false positives. With more clusters, the last ones are likely false negatives.
 
 We could also check the values associated to the individual genes in the clusters
 
@@ -217,7 +217,7 @@ As a rule of thumb, differentially expressed genes are expected to present high 
 
 If the researcher is interested in a more thorough analysis, other functions are at their service.
 
-When the object is created its statistics are computed, so afterwards it is possible to extract the information and generate several plots with the following instructions
+A summary of OR, meanFP and dFP (density) can be obtained.
 
 ```
 summaries(myfindDE)
@@ -268,16 +268,21 @@ $summarydFP
  [99] 5.76309784 7.52559437 3.21192579 4.29292572 5.70884616 3.84099601 9.13942664
 [106] 5.33755737 8.53078041
 ```
+A plot with a representation of the potential genes based on OR (vertical axis), FP (horizontal axis) and dFP (size of the circle is inversely proportional to its value) can also be obtained. The plot is similar to Fig.3b in the paper.
 
 ```
 plotFPvsOR(myfindDE)
 ```
+The plot of k values against the silhouette measure is also provided.
+
 ```
 plotclusters(myfindDE)
 ```
+It is also possible to see a graphic representation of the clustering projected onto the first two principal components
+
 ```
-clusplotk(myfindDE, 2)
+clusplotk(myfindDE, k = 2)
 ```
 ```
-clusplotk(myfindDE, 4)
+clusplotk(myfindDE, k = 4)
 ```
