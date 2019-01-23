@@ -7,7 +7,8 @@ density <- function(dx, label,  K=10)
   # Output: densidad
   o <- order(dx)[1:K]
   r <- (dx[o])[K]
-  p <- sum(label[o]==0)/K
+  # p <- sum(label[o]==0)/K
+  p <- sum(label[o]==0)
   f <- p/r
   out <- c(p, f, r)
   out

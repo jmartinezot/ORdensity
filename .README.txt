@@ -38,7 +38,7 @@ library('findDE')
 installing from local source
 
 remove.packages('findDE')
-install.packages("/home/otzeta/Github/findDE", repos = NULL, type = "source")
+install.packages("/home/bee/Github/findDE", repos = NULL, type = "source")
 library('findDE')
 
 remove all variables in environment
@@ -46,6 +46,7 @@ remove all variables in environment
 rm(list=ls())
 
 initialize a findDE object
+set.seed(0)
 x <- example[, 3:32]
 y <- example[, 33:62]
 positive <- as.matrix(x)

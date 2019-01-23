@@ -9,7 +9,7 @@
 #' 
 #' @author Itziar Irigoien, Concepcion Arenas, Jose Maria Martinez-Otzeta
 #' 
-#' @export summaries
+#' @export summary
 #' @export plotFPvsOR
 #' @export plotclusters
 #' @export clusplotk
@@ -28,9 +28,9 @@ setMethod("show",
 		}
 	)
 
-setGeneric("summaries", function(object, ...) standardGeneric("summaries"))
+#setGeneric("summary", function(object, ...) standardGeneric("summary"))
 
-setMethod("summaries",
+setMethod("summary",
   signature = "findDE",
   definition = function(object){
     list("summaryOR"=object@OR,
@@ -114,7 +114,7 @@ setGeneric("compute.findDE", function(object, ...) standardGeneric("compute.find
 
 setMethod("compute.findDE", 
 	signature = "findDE",
-	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), weights=c(1/4,1/2,1/4), verbose=FALSE, parallel = FALSE) {
+	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), weights=c(1/4,1/2,1/4), K = 10, verbose=FALSE, parallel = FALSE) {
 		  a <- system.time ({
 	    x <- as.matrix(object@positive)
 		  y <- as.matrix(object@negative)
@@ -301,7 +301,7 @@ setMethod("compute.findDE",
 		      Dred <- Dmix[1:ns, ]
 		      for(i in 1:ns)
 		      {
-			  res[i, ] <- c(density(Dred[i, -i], label=label[-i], K=10))
+			  res[i, ] <- c(density(Dred[i, -i], label=label[-i], K))
 		      }
 		      apilar[ , , j] <- res
 		  } })
@@ -317,7 +317,7 @@ setMethod("compute.findDE",
 		   genes <- (1:G)[suspicious]
 		   res <- cbind(genes, OR[suspicious], segununiforme, auxx, aux[, -1])
 		   row.names(res) <- NULL
-		   colnames(res) <- c("id", "OR", "DifExp",  "minFP", "meanFP", "maxFP", "density", "radius")
+		   colnames(res) <- c("id", "OR", "DifExp",  "minFP", "FP", "maxFP", "dFP", "radius")
 		   oo <- order(res[, 3], -res[, 2])
 		   # print(res[oo,])
 		   # print(ns)
@@ -327,7 +327,7 @@ setMethod("compute.findDE",
 		   
 		   if (verbose) {print('g'); print(g)}
 		  
-		   object@out <- list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0))
+		   object@out <- list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0, K))
 		   # object
 		}
 	)
