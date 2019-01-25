@@ -28,16 +28,27 @@ setMethod("show",
 		}
 	)
 
-#setGeneric("summary", function(object, ...) standardGeneric("summary"))
+setGeneric("summaries", function(object, ...) standardGeneric("summaries"))
+
+setMethod("summaries",
+          signature = "findDE",
+          definition = function(object){
+            list("summaryOR"=object@OR,
+                 "summaryFP"=object@FP,
+                 "summarydFP"=object@dFP)
+          }
+)
+
+# setGeneric("summary", function(object, ...) standardGeneric("summary.findDE"))
 
 setMethod("summary",
-  signature = "findDE",
-  definition = function(object){
-    list("summaryOR"=object@OR,
-      "summarymeanFP"=object@FP,
-      "summarydFP"=object@dFP)
-    }
-  )
+          signature = "findDE",
+          definition = function(object, ...){
+            list("summaryOR"=object@OR,
+                 "summaryFP"=object@FP,
+                 "summarydFP"=object@dFP)
+          }
+)
 
 setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
 
@@ -362,8 +373,8 @@ setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR,
   .Object@parallel <- parallel
   .Object@out <- compute.findDE(.Object, verbose = .Object@verbose, parallel = .Object@parallel)
   .Object@OR <- .Object@out$summary[, "OR"]
-  .Object@FP <- .Object@out$summary[, "meanFP"]
-  .Object@dFP <- .Object@out$summary[, "density"]
+  .Object@FP <- .Object@out$summary[, "FP"]
+  .Object@dFP <- .Object@out$summary[, "dFP"]
   .Object@char <- data.frame(.Object@OR, .Object@FP, .Object@dFP)
   require(cluster)
   .Object@clustering2 <- pam(dist(scale(.Object@char)), 2)$clustering
