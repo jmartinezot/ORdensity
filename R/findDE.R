@@ -9,24 +9,37 @@
 #' 
 #' @author Itziar Irigoien, Concepcion Arenas, Jose Maria Martinez-Otzeta
 #' 
-#' @export summary
 #' @export plotFPvsOR
 #' @export plotclusters
 #' @export clusplotk
 #' @export compute.findDE
+
 findDE <- setClass(
 	"findDE",
 	slots = c(positive="matrix", negative="matrix", out="list", OR="numeric", FP="numeric", dFP="numeric", char="data.frame", clustering2="integer", clustering4="integer", verbose="logical", parallel="logical"),
 	prototype = list(positive=matrix(), negative=matrix(), out=list(), OR=numeric(), FP=numeric(), dFP=numeric(), char=data.frame(), clustering2=integer(), clustering4=integer(), verbose=logical(), parallel=logical())
 )
 
+# setGeneric("summary")
+
+# setGeneric("summary.findDE", function(object, ...) standardGeneric("summary.findDE"))
+
+setMethod("summary",
+          signature = "findDE",
+          definition = function(object, ...){
+            list("summaryOR"=object@OR,
+                 "summaryFP"=object@FP,
+                 "summarydFP"=object@dFP)
+          }
+)
+
 setMethod("show",
-	signature = "findDE",
-	definition = function(object) {
-		cat("Positive data matrix: ", object@positive, "\n", sep = "")
-		cat("Negative data matrix: ", object@negative, "\n", sep = "")
-		}
-	)
+          signature = "findDE",
+          definition = function(object) {
+            cat("Positive data matrix: ", object@positive, "\n", sep = " ")
+            cat("Negative data matrix: ", object@negative, "\n", sep = " ")
+          }
+)
 
 setGeneric("summaries", function(object, ...) standardGeneric("summaries"))
 
@@ -39,16 +52,8 @@ setMethod("summaries",
           }
 )
 
-# setGeneric("summary", function(object, ...) standardGeneric("summary.findDE"))
 
-setMethod("summary",
-          signature = "findDE",
-          definition = function(object, ...){
-            list("summaryOR"=object@OR,
-                 "summaryFP"=object@FP,
-                 "summarydFP"=object@dFP)
-          }
-)
+
 
 setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
 
