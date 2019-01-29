@@ -16,9 +16,9 @@ a <- foreach(i = 1:3, .combine = 'c') %dopar% {
 }
 parallel::stopCluster(cl)
 
-To generate documentation:
+To generate documentation and NAMESPACE file:
 
-setwd('/home/otzeta/Github/findDE/')
+setwd('/home/bee/Github/findDE/')
 devtools::document() 
 
 Remove the package from the current installation using
