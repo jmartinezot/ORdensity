@@ -15,6 +15,7 @@
 #' @export compute.findDE
 #' @export findDEgenes
 #' @export summary
+#' @export preclusteredData
 
 findDE <- setClass(
 	"findDE",
@@ -28,10 +29,41 @@ findDE <- setClass(
 
 setMethod("summary",
           signature = "findDE",
-          definition = function(object, ...){
-            list("summaryOR"=object@OR,
-                 "summaryFP"=object@FP,
-                 "summarydFP"=object@dFP)
+          definition = function(object){
+              clustering <- pam(dist(scale(object@char)), object@bestK)$clustering
+              result_prov <- list()
+              meanOR <- list()
+              for (k in 1:object@bestK)
+              {
+                result_prov[[k]] <- object@out$summary
+                result_prov[[k]] <- result_prov[[k]][,!colnames[result_prov[[k]]] %in% c("DifExp",  "minFP", "maxFP", "radius")]
+                meanOR[[k]] <- mean(result_prov[[k]][,'OR'])
+              }
+              clusters_ordering <- order(as.numeric(meanOR), decreasing = TRUE)
+              clusters <- list()
+              for (k in 1:object@bestK)
+              {
+                clusters[[k]] <- result_prov[[clusters_ordering[k]]]
+              }
+              # cat("The ORdensity method has found that the optimal clustering of the data consists of",object@bestK,"clusters\n")
+              prop <- object@out$prop
+              neighbours <- prop[3]
+              p0 <- prop[2]
+              return(list("neighbours"=neighbours, "p0_K"=p0*neighbours, "clusters"=clusters))
+        }
+)
+
+setGeneric("preclusteredData", function(object, ...) standardGeneric("preclusteredData"))
+
+setMethod("preclusteredData",
+          signature = "findDE",
+          definition = function(object){
+              preclustered_data <- object@out$summary
+              preclustered_data$DifExp <- NULL
+              preclustered_data$minFP <- NULL
+              preclustered_data$maxFP <- NULL
+              preclustered_data$radius <- NULL
+              preclustered_data
           }
 )
 
@@ -430,6 +462,7 @@ setMethod("findDEgenes",
               DFgenes[[k]] <- list("cluster_number"=k, "genes"=sort(clusters[[k]][,'id']), "meanOR"=mean(clusters[[k]][,'OR']))
             }
             cat("The ORdensity method has found that the optimal clustering of the data consists of",object@bestK,"clusters\n")
-            return(list("DFgenes"=DFgenes,"clusters"=clusters))
+            # return(list("DFgenes"=DFgenes,"clusters"=clusters))
+            return(DFgenes)
           }
 )
