@@ -35,8 +35,8 @@ setMethod("summary",
               meanOR <- list()
               for (k in 1:object@bestK)
               {
-                result_prov[[k]] <- object@out$summary
-                result_prov[[k]] <- result_prov[[k]][,!colnames[result_prov[[k]]] %in% c("DifExp",  "minFP", "maxFP", "radius")]
+                result_prov[[k]] <- object@out$summary[clustering==k,]
+                result_prov[[k]] <- result_prov[[k]][,!colnames(result_prov[[k]]) %in% c("DifExp",  "minFP", "maxFP", "radius")]
                 meanOR[[k]] <- mean(result_prov[[k]][,'OR'])
               }
               clusters_ordering <- order(as.numeric(meanOR), decreasing = TRUE)
