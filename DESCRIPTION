@@ -1,12 +1,14 @@
 Package: findDE
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Differentially Expressed Genes Discovery using ORdensity Method
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Concepción Arenas, Itziar Irigoien, José María Martínez Otzeta
+Maintainer: José María Martínez Otzeta <josemaria.martinezo@ehu.eus>
+Description: findDE is a package for the automated discovery of differentially expressed genes.
+    It makes use of the ORdensity method and the associated FP and dFP values to detect the
+    most likely true positives.
+License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.1
+Imports: cluster, foreach, doRNG, parallel

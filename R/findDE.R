@@ -19,8 +19,8 @@
 
 findDE <- setClass(
 	"findDE",
-	slots = c(positive="matrix", negative="matrix", out="list", OR="numeric", FP="numeric", dFP="numeric", char="data.frame", bestK = "numeric", clustering2="integer", clustering4="integer", verbose="logical", parallel="logical", replicable="logical", seed="numeric"),
-	prototype = list(positive=matrix(), negative=matrix(), out=list(), OR=numeric(), FP=numeric(), dFP=numeric(), char=data.frame(), bestK = numeric(), clustering2=integer(), clustering4=integer(), verbose=logical(), parallel=logical(), replicable=logical(), seed=numeric())
+	slots = c(positive="matrix", negative="matrix", out="list", OR="numeric", FP="numeric", dFP="numeric", char="data.frame", bestK = "numeric", verbose="logical", parallel="logical", replicable="logical", seed="numeric"),
+	prototype = list(positive=matrix(), negative=matrix(), out=list(), OR=numeric(), FP=numeric(), dFP=numeric(), char=data.frame(), bestK = numeric(), verbose=logical(), parallel=logical(), replicable=logical(), seed=numeric())
 )
 
 # setGeneric("summary")
@@ -49,7 +49,11 @@ setMethod("summary",
               prop <- object@out$prop
               neighbours <- prop[3]
               p0 <- prop[2]
-              return(list("neighbours"=neighbours, "p0_K"=p0*neighbours, "clusters"=clusters))
+              cat("This is the proposed clustering made by the ORdensity method\n")
+              cat("For the computation of FP and dFP a total of", neighbours, "neighbours have been taken into account\n")
+              cat("The expected number of false positives neighbours is", expectedFalsePositiveNeighbours, "\n")
+              cat("The ORdensity method has found that the optimal clustering of the data consists of",object@bestK,"clusters\n\n")
+              return(list("neighbours"=neighbours, "expectedFalsePositiveNeighbours"=p0*neighbours, "clusters"=clusters))
         }
 )
 
@@ -58,22 +62,29 @@ setGeneric("preclusteredData", function(object, ...) standardGeneric("precluster
 setMethod("preclusteredData",
           signature = "findDE",
           definition = function(object){
-              preclustered_data <- object@out$summary
+              prop <- object@out$prop
+              neighbours <- prop[3]
+              p0 <- prop[2]
+              preclustered_data <- as.data.frame(object@out$summary)
               preclustered_data$DifExp <- NULL
               preclustered_data$minFP <- NULL
               preclustered_data$maxFP <- NULL
               preclustered_data$radius <- NULL
+              preclustered_data$S <- ifelse(preclustered_data$FP == 0, "S", "")
+              preclustered_data$F <- ifelse(preclustered_data$FP < p0 * neighbours, "F", "")
+              cat("Column S denotes the cases when FP=0\n")
+              cat("Column F denotes the cases when FP < expectedFalsePositives")
               preclustered_data
           }
 )
 
-setMethod("show",
-          signature = "findDE",
-          definition = function(object) {
-            cat("Positive data matrix: ", object@positive, "\n", sep = " ")
-            cat("Negative data matrix: ", object@negative, "\n", sep = " ")
-          }
-)
+#setMethod("show",
+#          signature = "findDE",
+#          definition = function(object) {
+#            cat("Positive data matrix: ", object@positive, "\n", sep = " ")
+#            cat("Negative data matrix: ", object@negative, "\n", sep = " ")
+#          }
+#)
 
 setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
 
@@ -401,7 +412,7 @@ setValidity("findDE", function(object) {
 }
 )
 
-setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR, FP, dFP, char, bestK, clustering2, clustering4, verbose = FALSE, parallel = FALSE, replicable = TRUE, seed = 0) {
+setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR, FP, dFP, char, bestK, verbose = FALSE, parallel = FALSE, replicable = TRUE, seed = 0) {
   .Object@positive <- positive
   .Object@negative <- negative
   # validObject(.Object)
@@ -409,15 +420,13 @@ setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR,
   .Object@parallel <- parallel
   .Object@replicable <- replicable
   .Object@seed <- seed
-  .Object@out <- compute.findDE(.Object, verbose = .Object@verbose, parallel = .Object@parallel, seed = .Object@seed)
+  .Object@out <- compute.findDE(.Object, verbose = .Object@verbose, parallel = .Object@parallel, replicable = .Object@replicable, seed = .Object@seed)
   .Object@OR <- .Object@out$summary[, "OR"]
   .Object@FP <- .Object@out$summary[, "FP"]
   .Object@dFP <- .Object@out$summary[, "dFP"]
   .Object@char <- data.frame(.Object@OR, .Object@FP, .Object@dFP)
   require(cluster)
   .Object@bestK <- findbestK(.Object)
-  .Object@clustering2 <- pam(dist(scale(.Object@char)), 2)$clustering
-  .Object@clustering4 <- pam(dist(scale(.Object@char)), 4)$clustering
   .Object
 })
 
