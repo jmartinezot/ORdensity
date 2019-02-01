@@ -10,7 +10,7 @@
 #' @author Itziar Irigoien, Concepcion Arenas, Jose Maria Martinez-Otzeta
 #'
 #' @export plotFPvsOR
-#' @export plotclusters
+#' @export silhouetteAnalysis
 #' @export clusplotk
 #' @export compute.findDE
 #' @export findDEgenes
@@ -51,7 +51,7 @@ setMethod("summary",
               p0 <- prop[2]
               cat("This is the proposed clustering made by the ORdensity method\n")
               cat("For the computation of FP and dFP a total of", neighbours, "neighbours have been taken into account\n")
-              cat("The expected number of false positives neighbours is", expectedFalsePositiveNeighbours, "\n")
+              cat("The expected number of false positives neighbours is", p0*neighbours, "\n")
               cat("The ORdensity method has found that the optimal clustering of the data consists of",object@bestK,"clusters\n\n")
               return(list("neighbours"=neighbours, "expectedFalsePositiveNeighbours"=p0*neighbours, "clusters"=clusters))
         }
@@ -73,7 +73,7 @@ setMethod("preclusteredData",
               preclustered_data$S <- ifelse(preclustered_data$FP == 0, "S", "")
               preclustered_data$F <- ifelse(preclustered_data$FP < p0 * neighbours, "F", "")
               cat("Column S denotes the cases when FP=0\n")
-              cat("Column F denotes the cases when FP < expectedFalsePositives")
+              cat("Column F denotes the cases when FP < expectedFalsePositives\n")
               preclustered_data
           }
 )
@@ -99,9 +99,9 @@ setMethod("plotFPvsOR",
     }
   )
 
-setGeneric("plotclusters", function(object, ...) standardGeneric("plotclusters"))
+setGeneric("silhouetteAnalysis", function(object, ...) standardGeneric("silhouetteAnalysis"))
 
-setMethod("plotclusters",
+setMethod("silhouetteAnalysis",
   signature = "findDE",
   definition = function(object){
     library(cluster)
@@ -115,11 +115,11 @@ setMethod("plotclusters",
   }
   )
 
-setGeneric("clusplotk", function(object, k, ...) standardGeneric("clusplotk"))
+setGeneric("clusplotk", function(object, ...) standardGeneric("clusplotk"))
 
 setMethod("clusplotk",
   signature = "findDE",
-  definition = function(object, k){
+  definition = function(object, k = object@bestK){
     aa <- pam(dist(scale(object@char)), k)
     clusplot(aa, main = paste("Clustering with k = ", k))
   }
