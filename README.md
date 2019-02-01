@@ -388,7 +388,7 @@ It is also possible to see a graphic representation of the clustering projected 
 ```
 clusplotk(myfindDE)
 ```
-![plot3](/images/clusplotk2.png)
+![plot3](/images/clusplotk.png)
 
 Other number of clusters can also be checked
 
