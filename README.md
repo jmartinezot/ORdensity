@@ -378,17 +378,19 @@ plotFPvsOR(myfindDE, k = 5)
 The plot of k values against the silhouette measure is also provided.
 
 ```
-plotclusters(myfindDE)
+silhouetteAnalysis(myfindDE)
 ```
 
-![plot2](/images/plotclusters.png)
+![plot2](/images/silhouetteAnalysis.png)
 
 It is also possible to see a graphic representation of the clustering projected onto the first two principal components
 
 ```
-clusplotk(myfindDE, k = 2)
+clusplotk(myfindDE)
 ```
 ![plot3](/images/clusplotk2.png)
+
+Other number of clusters can also be checked
 
 ```
 clusplotk(myfindDE, k = 4)
