@@ -18,34 +18,34 @@ parallel::stopCluster(cl)
 
 To generate documentation and NAMESPACE file:
 
-setwd('/home/bee/Github/findDE/')
+setwd('/home/bee/Github/ORdensity/')
 devtools::document() 
 
 Remove the package from the current installation using
 
 sudo R
 
-remove.packages('findDE')
+remove.packages('ORdensity')
 
 install again doing
 
 sudo R
 
 library('devtools')
-install_github('jmartinezot/findDE')
-library('findDE')
+install_github('jmartinezot/ORdensity')
+library('ORdensity')
 
 installing from local source
 
-remove.packages('findDE')
-install.packages("/home/bee/Github/findDE", repos = NULL, type = "source")
-library('findDE')
+remove.packages('ORdensity')
+install.packages("/home/bee/Github/ORdensity", repos = NULL, type = "source")
+library('ORdensity')
 
 remove all variables in environment
 
 rm(list=ls())
 
-initialize a findDE object
+initialize a ORdensity object
 set.seed(0)
 x <- example[, 3:32]
 y <- example[, 33:62]
@@ -53,29 +53,34 @@ positive <- as.matrix(x)
 negative <- as.matrix(y)
 randomA <- matrix(rnorm(30*100), nrow = 100)
 randomB <- matrix(rnorm(30*100), nrow = 100)
-myfindDE <- new("findDE", positive = positive, negative = negative, parallel = TRUE)
-out <- myfindDE@out
+genLabels <- paste("SimulatedGene", 1:nrow(positive), sep="")
+# myORdensity <- new("ORdensity", positive = positive, negative = negative, genIDs = genLabels, parallel = TRUE)
+myORdensity <- new("ORdensity", positive = positive, negative = negative, parallel = TRUE)
+out <- myORdensity@out
 #res <- as.data.frame(out$res)
 #res[order(res$OR, decreasing = TRUE),]
-char <- myfindDE@char
-myclust <- findDEgenes(myfindDE)
-result <- findDEgenes(myfindDE)
-# myfindDE <- new("findDE", positive = randomA, negative = randomB)
+char <- myORdensity@char
+myclust <- findDEgenes(myORdensity)
+result <- findDEgenes(myORdensity)
+# myORdensity <- new("ORdensity", positive = randomA, negative = randomB)
 
-summaries(myfindDE)
-plotFPvsOR(myfindDE)
-plotclusters(myfindDE)
-clusplotk(myfindDE, 2)
-clusplotk(myfindDE, 4)
+positiveCases <- positive
+negativeCases <- negative
+
+summaries(myORdensity)
+plotFPvsOR(myORdensity)
+plotclusters(myORdensity)
+clusplotk(myORdensity, 2)
+clusplotk(myORdensity, 4)
 
 let us see what it contains
-myfindDE@positive
-myfindDE@negative
-myfindDE@.out # this has to be empty
+myORdensity@positive
+myORdensity@negative
+myORdensity@.out # this has to be empty
 
 initialize the .out field
-myfindDE <- compute.findDE(myfindDE)
-out <- myfindDE@.out
+myORdensity <- compute.ORdensity(myORdensity)
+out <- myORdensity@.out
 
 out$summary
 OR <- out$summary[, "OR"]
@@ -206,8 +211,8 @@ nonimportant <- out$summary[clustering==2, "id"]
 table(dat$DEgen[nonimportant])
 
 
-out <- myfindDE@out
-clustering2 <- myfindDE@clustering2
+out <- myORdensity@out
+clustering2 <- myORdensity@clustering2
 veryimportant <- out$summary[clustering2==1, "id"]
 table(example$DEgen[veryimportant])
 table(example$gap[veryimportant])
@@ -215,7 +220,7 @@ nonimportant <- out$summary[clustering2==2, "id"]
 table(example$DEgen[nonimportant])
 table(example$gap[nonimportant])
 
-clustering4 <- myfindDE@clustering4
+clustering4 <- myORdensity@clustering4
 veryimportant <- out$summary[clustering4==1, "id"]
 table(example$DEgen[veryimportant])
 table(example$gap[veryimportant])

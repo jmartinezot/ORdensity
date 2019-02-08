@@ -1,4 +1,4 @@
-# findDE
+# ORdensity
 
 In this repository is located the R package that implements the statistical method presented in the paper [Identification of differentially expressed genes by means of outlier detection](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-018-2318-8).
 
@@ -20,7 +20,7 @@ To install the package from this repository, just run the following code
 
 ```
 library('devtools')
-install_github('jmartinezot/findDE')
+install_github('jmartinezot/ORdensity')
 ```
 
 This package requires the ```cluster``` library to be installed; otherwise it will automatically install and load it. Likewise, the ```foreach``` library is used for parallelization.
@@ -28,7 +28,7 @@ This package requires the ```cluster``` library to be installed; otherwise it wi
 To start working with the package, just load it in the R enviroment with the following command
 
 ```
-library('findDE')
+library('ORdensity')
 ```
 
 ## Example
@@ -46,17 +46,17 @@ negative <- as.matrix(y)
 To create an S4 object to perform the analysis, follow this syntaxis 
 
 ```
-myfindDE <- new("findDE", positive = positive, negative = negative)
+myORdensity <- new("ORdensity", positive = positive, negative = negative)
 ```
 By default, no parallelizing is enabled. To enable it, just run instead
 
 ```
-myfindDE <- new("findDE", positive = positive, negative = negative, parallel = TRUE)
+myORdensity <- new("ORdensity", positive = positive, negative = negative, parallel = TRUE)
 ```
 It is also possible to enable or disable replicability, and to pass the seed to the pseudorandom number generator. The default values are 
 
 ```
-myfindDE <- new("findDE", positive = positive, negative = negative, replicable = TRUE, seed = 0)
+myORdensity <- new("ORdensity", positive = positive, negative = negative, replicable = TRUE, seed = 0)
 ```
 with the function using the given seed to set the random generator. If replicable = FALSE, no seed is used.
 
@@ -65,7 +65,7 @@ If the researcher just wants to extract the differentially expressed genes detec
 For example, after running this code
 
 ```
-result <- findDEgenes(myfindDE)
+result <- findDEgenes(myORdensity)
 ```
 
 and being told that the optimal clustering consists of just two clusters, 
@@ -106,7 +106,7 @@ The clusters are ordered in decreasing order according to the value of the mean 
 We could also check a more detailed summary of the object.
 
 ```
-summary(myfindDE)
+summary(myORdensity)
 ```
 The output would be the following
 
@@ -246,7 +246,7 @@ If the researcher is interested in a more thorough analysis, other functions are
 The data before being clustered can be obtained with the following function
 
 ```
-preclusteredData(myfindDE)
+preclusteredData(myORdensity)
 Column S denotes the cases when FP=0
 Column F denotes the cases when FP < expectedFalsePositives
      id         OR   FP        dFP S F
@@ -362,7 +362,7 @@ Column F denotes the cases when FP < expectedFalsePositives
 A plot with a representation of the potential genes based on OR (vertical axis), FP (horizontal axis) and dFP (size of the circle is inversely proportional to its value) can also be obtained. The plot is similar to Fig.3b in the paper.
 
 ```
-plotFPvsOR(myfindDE)
+plotFPvsOR(myORdensity)
 ```
 
 ![plot1](/images/plotFPvsOR.png)
@@ -370,7 +370,7 @@ plotFPvsOR(myfindDE)
 By default, the number of clusters computed by the ORdensity method is used. Other values for the number of clusters can be specified.
 
 ```
-plotFPvsOR(myfindDE, k = 5)
+plotFPvsOR(myORdensity, k = 5)
 ```
 
 ![plot1](/images/plotFPvsOR5.png)
@@ -378,7 +378,7 @@ plotFPvsOR(myfindDE, k = 5)
 The plot of k values against the silhouette measure is also provided.
 
 ```
-silhouetteAnalysis(myfindDE)
+silhouetteAnalysis(myORdensity)
 ```
 
 ![plot2](/images/silhouetteAnalysis.png)
@@ -386,14 +386,14 @@ silhouetteAnalysis(myfindDE)
 It is also possible to see a graphic representation of the clustering projected onto the first two principal components
 
 ```
-clusplotk(myfindDE)
+clusplotk(myORdensity)
 ```
 ![plot3](/images/clusplotk.png)
 
 Other number of clusters can also be checked
 
 ```
-clusplotk(myfindDE, k = 4)
+clusplotk(myORdensity, k = 4)
 ```
 ![plot4](/images/clusplotk4.png)
 

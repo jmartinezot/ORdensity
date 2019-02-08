@@ -1,34 +1,34 @@
 #' @title
-#' Class for representing findDE
+#' Class for representing ORdensity
 #'
 #' @description
-#' Class for representing findDE
+#' Class for representing ORdensity
 #'
-#' @name findDE
-#' @exportClass findDE
+#' @name ORdensity
+#' @exportClass ORdensity
 #'
 #' @author Itziar Irigoien, Concepcion Arenas, Jose Maria Martinez-Otzeta
 #'
 #' @export plotFPvsOR
 #' @export silhouetteAnalysis
 #' @export clusplotk
-#' @export compute.findDE
+#' @export compute.ORdensity
 #' @export findDEgenes
 #' @export summary
 #' @export preclusteredData
 
-findDE <- setClass(
-	"findDE",
+ORdensity <- setClass(
+	"ORdensity",
 	slots = c(positive="matrix", negative="matrix", out="list", OR="numeric", FP="numeric", dFP="numeric", char="data.frame", bestK = "numeric", verbose="logical", parallel="logical", replicable="logical", seed="numeric"),
 	prototype = list(positive=matrix(), negative=matrix(), out=list(), OR=numeric(), FP=numeric(), dFP=numeric(), char=data.frame(), bestK = numeric(), verbose=logical(), parallel=logical(), replicable=logical(), seed=numeric())
 )
 
 # setGeneric("summary")
 
-# setGeneric("summary.findDE", function(object, ...) standardGeneric("summary.findDE"))
+# setGeneric("summary.ORdensity", function(object, ...) standardGeneric("summary.ORdensity"))
 
 setMethod("summary",
-          signature = "findDE",
+          signature = "ORdensity",
           definition = function(object){
               clustering <- pam(dist(scale(object@char)), object@bestK)$clustering
               result_prov <- list()
@@ -60,7 +60,7 @@ setMethod("summary",
 setGeneric("preclusteredData", function(object, ...) standardGeneric("preclusteredData"))
 
 setMethod("preclusteredData",
-          signature = "findDE",
+          signature = "ORdensity",
           definition = function(object){
               prop <- object@out$prop
               neighbours <- prop[3]
@@ -70,16 +70,16 @@ setMethod("preclusteredData",
               preclustered_data$minFP <- NULL
               preclustered_data$maxFP <- NULL
               preclustered_data$radius <- NULL
-              preclustered_data$S <- ifelse(preclustered_data$FP == 0, "S", "")
-              preclustered_data$F <- ifelse(preclustered_data$FP < p0 * neighbours, "F", "")
-              cat("Column S denotes the cases when FP=0\n")
-              cat("Column F denotes the cases when FP < expectedFalsePositives\n")
+              preclustered_data$Strong <- ifelse(preclustered_data$FP == 0, "S", "")
+              preclustered_data$Flexible <- ifelse(preclustered_data$FP < p0 * neighbours, "F", "")
+              cat("Column Strong denotes the cases when FP=0\n")
+              cat("Column Flexible denotes the cases when FP < expectedFalsePositives\n")
               preclustered_data
           }
 )
 
 #setMethod("show",
-#          signature = "findDE",
+#          signature = "ORdensity",
 #          definition = function(object) {
 #            cat("Positive data matrix: ", object@positive, "\n", sep = " ")
 #            cat("Negative data matrix: ", object@negative, "\n", sep = " ")
@@ -89,7 +89,7 @@ setMethod("preclusteredData",
 setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
 
 setMethod("plotFPvsOR",
-  signature = "findDE",
+  signature = "ORdensity",
   definition = function(object, k = object@bestK){
     clustering <- pam(dist(scale(object@char)), k)$clustering
     legend_text <- sprintf("cluster %s",seq(1:k))
@@ -102,7 +102,7 @@ setMethod("plotFPvsOR",
 setGeneric("silhouetteAnalysis", function(object, ...) standardGeneric("silhouetteAnalysis"))
 
 setMethod("silhouetteAnalysis",
-  signature = "findDE",
+  signature = "ORdensity",
   definition = function(object){
     library(cluster)
     s <- rep(NA, 10)
@@ -118,97 +118,81 @@ setMethod("silhouetteAnalysis",
 setGeneric("clusplotk", function(object, ...) standardGeneric("clusplotk"))
 
 setMethod("clusplotk",
-  signature = "findDE",
+  signature = "ORdensity",
   definition = function(object, k = object@bestK){
     aa <- pam(dist(scale(object@char)), k)
     clusplot(aa, main = paste("Clustering with k = ", k))
   }
   )
 
-
-setGeneric("bootstrap", function(object, N, N1, scale, weights, G, p, ...) standardGeneric("bootstrap"))
-
-setMethod("bootstrap",
-  signature = "findDE",
-  definition = function(object, N, N1, scale, weights, G, p){
-	s1 <- sample(1:N, N1, replace=FALSE)
-	s2 <- (1:N)[-s1]
-	aux1 <- z[, s1]
-	aux2 <- z[, s2]
-
-
-	qx.b <- t(apply(aux1, 1, quantile, probs=c(0.25, 0.5, 0.75)))
-	#    mx.b <- apply(aux1, 1, mean)
-	qy.b <- t(apply(aux2, 1, quantile, probs=c(0.25, 0.5, 0.75)))
-	#   my.b <- apply(aux2, 1, mean)
-	mz <- cbind(qx.b - qy.b) #, mx.b-my.b)
-
-	if(scale)
-	{
-	RIx.b <- qx.b[,3]-qx.b[,1]
-	RIy.b <- qy.b[,3]-qy.b[,1]
-	maxRI.b <- apply(cbind(RIx.b, RIy.b), 1, max)
-	mz <- mz/maxRI.b
-	}
-	mv.null[ , ,b] <- mz*matrix(rep(weights, G), byrow=TRUE, ncol=p)
-
-	#D0 <- as.matrix(ICGE::dgower(mz, type=list(cuant=1:p)))
-	D0 <- as.matrix(dist(mv.null[,,b]))
-	vgR0 <- median(D0^2)/2
-	I <- apply(D0, 1,  IindexRobust, vg=vgR0)
-	ORnull[, b] <- 1/I
+getQuantilesDifferencesWeighted <- function(positiveCases, negativeCases, scale, weights, probs){
+  numGenes <- dim(positiveCases)[1]
+  quantilesPositiveCases <- t(apply(positiveCases, 1, quantile, probs=probs))
+  quantilesNegativeCases <- t(apply(negativeCases, 1, quantile, probs=probs))
+  quantilesDifferences <- cbind(quantilesPositiveCases - quantilesNegativeCases)
+  numProbs <- length(probs)
+  if(scale){
+    interquartileRangePositiveCases <- quantilesPositiveCases[,3]-quantilesPositiveCases[,1]
+    interquartileRangeNegativeCases  <- quantilesNegativeCases[,3]-quantilesNegativeCases[,1]
+    maxInterquartileRange <- apply(cbind(interquartileRangePositiveCases, interquartileRangeNegativeCases), 1, max)
+    if(any(maxInterquartileRange==0))
+    {stop('Can\'t scale the data')}
+    quantilesDifferences <- quantilesDifferences/maxInterquartileRange
   }
-  )
+  quantilesDifferencesWeighted <- quantilesDifferences*matrix(rep(weights, numGenes), byrow=TRUE, ncol=numProbs)
+  return (quantilesDifferencesWeighted)
+}
 
-setGeneric("compute.findDE", function(object, ...) standardGeneric("compute.findDE"))
+getBootstrapSample <- function(allCases, numPositiveCases)
+{
+  numCases <- dim(allCases)[2]
+  s1 <- sample(1:numCases, numPositiveCases, replace=FALSE)
+  s2 <- (1:numCases)[-s1]
+  aux1 <- allCases[, s1]
+  aux2 <- allCases[, s2]
+  return(list("positives"=aux1, "negatives"=aux2))
+}
 
-setMethod("compute.findDE",
-	signature = "findDE",
+getOR <- function(distObject)
+{	
+  distMatrix <- as.matrix(distObject)
+  vgR <- median(distMatrix^2)/2
+  I <- apply(distMatrix, 1,  IindexRobust, vg=vgR)
+  OR <- 1/I
+  return(OR)
+}
+
+setGeneric("compute.ORdensity", function(object, ...) standardGeneric("compute.ORdensity"))
+
+setMethod("compute.ORdensity",
+	signature = "ORdensity",
 	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), weights=c(1/4,1/2,1/4), K = 10, verbose=FALSE, parallel = FALSE, replicable = TRUE, seed = 0) {
 	    a <- system.time ({
-	    x <- as.matrix(object@positive)
-		  y <- as.matrix(object@negative)
-		  G <- dim(x)[1]
-		  N1 <- dim(x)[2]
-		  N2 <- dim(y)[2]
-		  N <- N1 + N2 })
+	    positiveCases <- as.matrix(object@positive)
+		  negativeCases <- as.matrix(object@negative)
+		  numGenes <- dim(positiveCases)[1]
+		  numPositiveCases <- dim(positiveCases)[2]
+		  numNegativeCases <- dim(negativeCases)[2]
+		  numCases <- numPositiveCases + numNegativeCases
+		  probs=c(0.25, 0.5, 0.75)
+		  numProbs <- length(probs)})
 
-		  gloN <<- N
-		  gloN1 <<- N1
-
-		  if (verbose) {print('a'); print(a)}
+		  if (verbose) {print('Time after first chunk'); print(a)}
 
 		  b <- system.time ({
-		  qx <- t(apply(x, 1, quantile, probs=c(0.25, 0.5, 0.75)))
-		 # mx <- apply(x, 1, mean)
-		  qy <- t(apply(y, 1, quantile, probs=c(0.25, 0.5, 0.75)))
-		 # my <- apply(y, 1, mean)
-		  mv <- cbind(qx - qy) #, mx-my)
+		  quantilesDifferencesWeighted <- getQuantilesDifferencesWeighted(positiveCases, negativeCases, scale, weights, probs)
+      })
 
-		  p <- dim(mv)[2]
+		  if (verbose) {print('Time after second chunk'); print(b)}
 
-		  if(scale){
-		    RIx <- qx[,3]-qx[,1]
-		    RIy <- qy[,3]-qy[,1]
-		    maxRI <- apply(cbind(RIx, RIy), 1, max)
-		    if(any(maxRI==0))
-		    {stop('Can\'t scale the data')}
-		    mv <- mv/maxRI
-		  } })
+		  c <- system.time ({Dxy <- dist(quantilesDifferencesWeighted)})
 
-		  if (verbose) {print('b'); print(b)}
-
-		  c <- system.time ({
-		  mv <- mv*matrix(rep(weights, G), byrow=TRUE, ncol=p)
-		  Dxy <- dist(mv) #ICGE::dgower(mv, type=list(cuant=1:p))
-		  })
-
-		  if (verbose) {print('c'); print(c)}
+		  if (verbose) {print('Time after third chunk'); print(c)}
 
 		  d <- system.time ({
-		  z <- cbind(x, y)
-		  ORnull <- matrix(0, nrow=G, ncol=B)
-		  mv.null <- array(0, dim=c(G, p, B))
+		  allCases <- cbind(positiveCases, negativeCases)
+		  ORnull <- matrix(0, nrow=numGenes, ncol=B)
+		  quantilesDifferencesWeighted.null <- array(0, dim=c(numGenes, numProbs, B))
 
 		  if (parallel)
 		  {
@@ -223,43 +207,16 @@ setMethod("compute.findDE",
 		  cl <- parallel::makeCluster(nproc)
 		  doParallel::registerDoParallel(cl)
       res_par <- foreach(b = 1:B, .combine = 'c', .options.RNG=seed) %dorng% {
-  			s1 <- sample(1:N, N1, replace=FALSE)
-  			s2 <- (1:N)[-s1]
-  			aux1 <- z[, s1]
-  			aux2 <- z[, s2]
-
-  			qx.b <- t(apply(aux1, 1, quantile, probs=c(0.25, 0.5, 0.75))) # se puede tener antes
-  			#    mx.b <- apply(aux1, 1, mean)
-  			qy.b <- t(apply(aux2, 1, quantile, probs=c(0.25, 0.5, 0.75))) # se puede tener antes
-  			#   my.b <- apply(aux2, 1, mean)
-  			mz <- cbind(qx.b - qy.b) #, mx.b-my.b)
-
-  			if(scale)
-  			{
-  			RIx.b <- qx.b[,3]-qx.b[,1] # se puede tener antes
-  			RIy.b <- qy.b[,3]-qy.b[,1] # se puede tener antes
-  			maxRI.b <- apply(cbind(RIx.b, RIy.b), 1, max)
-  			mz <- mz/maxRI.b
-  			}
+        bootstrapSample <- getBootstrapSample(allCases, numPositiveCases)
   			res <- list()
-  			# mv.null[ , ,b] <- mz*matrix(rep(weights, G), byrow=TRUE, ncol=p)
-  			res[[1]] <- mz*matrix(rep(weights, G), byrow=TRUE, ncol=p)
-
-  			#D0 <- as.matrix(ICGE::dgower(mz, type=list(cuant=1:p)))
-  			# D0 <- as.matrix(dist(mv.null[,,b]))
-  			D0 <- as.matrix(dist(res[[1]]))
-  			vgR0 <- median(D0^2)/2
-  			I <- apply(D0, 1,  IindexRobust, vg=vgR0)
-  			# ORnull[, b] <- 1/I
-  			res[[2]] <- 1/I
+  			res[[1]] <- getQuantilesDifferencesWeighted(bootstrapSample$positives, bootstrapSample$negatives, scale, weights, probs)
+  			res[[2]] <- getOR(dist(res[[1]]))
   			res
 		  }
       parallel::stopCluster(cl)
 
-      glo <<- res_par
-
       for (b in 1:B) {
-        mv.null[ , ,b] <- res_par[[b*2-1]]
+        quantilesDifferencesWeighted.null[ , ,b] <- res_par[[b*2-1]]
         ORnull[, b] <- res_par[[b*2]]
       }
 		} # end if
@@ -270,51 +227,21 @@ setMethod("compute.findDE",
 		  }
 		  for (b in 1:B)
 		  {
-		    s1 <- sample(1:N, N1, replace=FALSE)
-		    s2 <- (1:N)[-s1]
-		    aux1 <- z[, s1]
-		    aux2 <- z[, s2]
-
-		    qx.b <- t(apply(aux1, 1, quantile, probs=c(0.25, 0.5, 0.75)))
-		    #    mx.b <- apply(aux1, 1, mean)
-		    qy.b <- t(apply(aux2, 1, quantile, probs=c(0.25, 0.5, 0.75)))
-		    #   my.b <- apply(aux2, 1, mean)
-		    mz <- cbind(qx.b - qy.b) #, mx.b-my.b)
-
-		    if(scale)
-		    {
-		      RIx.b <- qx.b[,3]-qx.b[,1]
-		      RIy.b <- qy.b[,3]-qy.b[,1]
-		      maxRI.b <- apply(cbind(RIx.b, RIy.b), 1, max)
-		      mz <- mz/maxRI.b
-		    }
-
-		    mv.null[ , ,b] <- mz*matrix(rep(weights, G), byrow=TRUE, ncol=p)
-
-
-		    #D0 <- as.matrix(ICGE::dgower(mz, type=list(cuant=1:p)))
-		    D0 <- as.matrix(dist(mv.null[,,b]))
-		    vgR0 <- median(D0^2)/2
-		    I <- apply(D0, 1,  IindexRobust, vg=vgR0)
-		    ORnull[, b] <- 1/I
+		    bootstrapSample <- getBootstrapSample(allCases, numPositiveCases)
+		    quantilesDifferencesWeighted.null[ , ,b] <- getQuantilesDifferencesWeighted(bootstrapSample$positives, bootstrapSample$negatives, scale, weights, probs)
+		    ORnull[, b] <- getOR(dist(quantilesDifferencesWeighted.null[,,b]))
 		  }
 		}
 		  })
 
-		  if (verbose) {print('d'); print(d)}
+		  if (verbose) {print('Time after fourth chunk'); print(d)}
 
 		# OR values for original data
 		  e <- system.time ({
-		  Dxy <- as.matrix(Dxy)
-		  vgR <- median(Dxy^2)/2
-		  I <- apply(Dxy, 1,  IindexRobust, vg=vgR)
-		  OR <- 1/I
+		  OR <- getOR(Dxy)
 
 		# Find cut point
-		#  M <- apply(ORnull, 2, sort)
-		#  ORnullord <- apply(M, 1, median)
-		#  corte <- ORnullord[floor((1-alpha)*G)]
-		   corte <- (sort(c(ORnull)))[floor((1-alpha)*G*B)]
+		   corte <- (sort(c(ORnull)))[floor((1-alpha)*numGenes*B)]
 
 		# Find individuals beyond threshold
 		   suspicious <- OR > corte
@@ -328,7 +255,7 @@ setMethod("compute.findDE",
 		  # print(fold)
 		  apilar <- array(0, dim=c(ns, 3, fold)) })
 
-		  if (verbose) {print('e'); print(e)}
+		  if (verbose) {print('Time after fifth chunk'); print(e)}
 
 		# Que pasa en la capa 1
 		  f <- system.time ({
@@ -336,16 +263,16 @@ setMethod("compute.findDE",
 		  {
 		      capa <- mirar == j
 		      nnull.red <- sum(capa)
-		      dat <- matrix(0, nrow=nnull.red, ncol=p)
+		      dat <- matrix(0, nrow=nnull.red, ncol=numProbs)
 		      cont <- 1
 		      for (i in (1:nnull)[capa])
 		      {
 			   f <- selec.null[i, 1]
 			   b <- selec.null[i, 2]
-			   dat[cont, ] <- mv.null[f, , b]
+			   dat[cont, ] <- quantilesDifferencesWeighted.null[f, , b]
 			   cont <- cont + 1
 		       }
-		      dat <- rbind(mv[suspicious, ], dat)
+		      dat <- rbind(quantilesDifferencesWeighted[suspicious, ], dat)
 		      label <- c(rep(1, ns), rep(0, nnull.red))
 
 		    #  Dmix <- ICGE::dgower(dat, type=list(cuant=1:p))
@@ -364,7 +291,7 @@ setMethod("compute.findDE",
 		      apilar[ , , j] <- res
 		  } })
 
-		  if (verbose) {print(f)}
+		  if (verbose) {print('Time after sixth chunk'); print(f)}
 
 		  g <- system.time ({
 		   aux <- t(plyr::aaply(apilar, c(2,1), mean))
@@ -372,7 +299,8 @@ setMethod("compute.findDE",
 		   ps <- ns/(ns+nnull/fold)
 		   p0 <- (nnull/fold)/(ns+nnull/fold)
 		   segununiforme <- aux[, 1] - p0
-		   genes <- (1:G)[suspicious]
+		   genes <- (1:numGenes)[suspicious]
+		   print(genes)
 		   res <- cbind(genes, OR[suspicious], segununiforme, auxx, aux[, -1])
 		   row.names(res) <- NULL
 		   colnames(res) <- c("id", "OR", "DifExp",  "minFP", "FP", "maxFP", "dFP", "radius")
@@ -383,17 +311,17 @@ setMethod("compute.findDE",
 		   # print(list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0)))
 		   })
 
-		   if (verbose) {print('g'); print(g)}
+		   if (verbose) {print('Time after seventh chunk'); print(g)}
 
 		   object@out <- list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0, K))
 		   # object
 		}
 	)
 
-# a <- findDE(positive = matrix(rnorm(500), nrow=50, ncol=10), negative = matrix(rnorm(500), nrow=50, ncol=10))
-# a <- compute.findDE(a)
+# a <- ORdensity(positive = matrix(rnorm(500), nrow=50, ncol=10), negative = matrix(rnorm(500), nrow=50, ncol=10))
+# a <- compute.ORdensity(a)
 
-setValidity("findDE", function(object) {
+setValidity("ORdensity", function(object) {
   valid <- TRUE
   msg <- NULL
   if (length(object@positive) == 0) {
@@ -412,7 +340,7 @@ setValidity("findDE", function(object) {
 }
 )
 
-setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR, FP, dFP, char, bestK, verbose = FALSE, parallel = FALSE, replicable = TRUE, seed = 0) {
+setMethod("initialize", "ORdensity", function(.Object, positive, negative, out, OR, FP, dFP, char, bestK, verbose = FALSE, parallel = FALSE, replicable = TRUE, seed = 0) {
   .Object@positive <- positive
   .Object@negative <- negative
   # validObject(.Object)
@@ -420,7 +348,7 @@ setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR,
   .Object@parallel <- parallel
   .Object@replicable <- replicable
   .Object@seed <- seed
-  .Object@out <- compute.findDE(.Object, verbose = .Object@verbose, parallel = .Object@parallel, replicable = .Object@replicable, seed = .Object@seed)
+  .Object@out <- compute.ORdensity(.Object, verbose = .Object@verbose, parallel = .Object@parallel, replicable = .Object@replicable, seed = .Object@seed)
   .Object@OR <- .Object@out$summary[, "OR"]
   .Object@FP <- .Object@out$summary[, "FP"]
   .Object@dFP <- .Object@out$summary[, "dFP"]
@@ -433,7 +361,7 @@ setMethod("initialize", "findDE", function(.Object, positive, negative, out, OR,
 setGeneric("findbestK", function(object, ...) standardGeneric("findbestK"))
 
 setMethod("findbestK",
-          signature = "findDE",
+          signature = "ORdensity",
           definition = function(object){
             s <- rep(NA, 10)
             for (k in 2:10)
@@ -449,7 +377,7 @@ setMethod("findbestK",
 setGeneric("findDEgenes", function(object, ...) standardGeneric("findDEgenes"))
 
 setMethod("findDEgenes",
-          signature = "findDE",
+          signature = "ORdensity",
           definition = function(object){
             clustering <- pam(dist(scale(object@char)), object@bestK)$clustering
             result_prov <- list()

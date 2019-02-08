@@ -2,10 +2,10 @@
 
 export(IindexRobust)
 export(clusplotk)
-export(compute.findDE)
+export(compute.ORdensity)
 export(findDEgenes)
 export(plotFPvsOR)
 export(preclusteredData)
 export(silhouetteAnalysis)
 export(summary)
-exportClasses(findDE)
+exportClasses(ORdensity)
