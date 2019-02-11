@@ -175,7 +175,8 @@ setMethod("compute.ORdensity",
 		  numNegativeCases <- dim(negativeCases)[2]
 		  numCases <- numPositiveCases + numNegativeCases
 		  probs=c(0.25, 0.5, 0.75)
-		  numProbs <- length(probs)})
+		  numProbs <- length(probs)
+		  numFolds <- fold})
 
 		  if (verbose) {print('Time after first chunk'); print(a)}
 
@@ -191,7 +192,7 @@ setMethod("compute.ORdensity",
 
 		  d <- system.time ({
 		  allCases <- cbind(positiveCases, negativeCases)
-		  ORnull <- matrix(0, nrow=numGenes, ncol=B)
+		  ORbootstrap <- matrix(0, nrow=numGenes, ncol=B)
 		  quantilesDifferencesWeighted.null <- array(0, dim=c(numGenes, numProbs, B))
 
 		  if (parallel)
@@ -208,16 +209,16 @@ setMethod("compute.ORdensity",
 		  doParallel::registerDoParallel(cl)
       res_par <- foreach(b = 1:B, .combine = 'c', .options.RNG=seed) %dorng% {
         bootstrapSample <- getBootstrapSample(allCases, numPositiveCases)
-  			res <- list()
-  			res[[1]] <- getQuantilesDifferencesWeighted(bootstrapSample$positives, bootstrapSample$negatives, scale, weights, probs)
-  			res[[2]] <- getOR(dist(res[[1]]))
-  			res
+  			res_one <- list()
+  			res_one[[1]] <- getQuantilesDifferencesWeighted(bootstrapSample$positives, bootstrapSample$negatives, scale, weights, probs)
+  			res_one[[2]] <- getOR(dist(res_one[[1]]))
+  			res_one
 		  }
       parallel::stopCluster(cl)
 
       for (b in 1:B) {
         quantilesDifferencesWeighted.null[ , ,b] <- res_par[[b*2-1]]
-        ORnull[, b] <- res_par[[b*2]]
+        ORbootstrap[, b] <- res_par[[b*2]]
       }
 		} # end if
 		else
@@ -229,91 +230,124 @@ setMethod("compute.ORdensity",
 		  {
 		    bootstrapSample <- getBootstrapSample(allCases, numPositiveCases)
 		    quantilesDifferencesWeighted.null[ , ,b] <- getQuantilesDifferencesWeighted(bootstrapSample$positives, bootstrapSample$negatives, scale, weights, probs)
-		    ORnull[, b] <- getOR(dist(quantilesDifferencesWeighted.null[,,b]))
+		    ORbootstrap[, b] <- getOR(dist(quantilesDifferencesWeighted.null[,,b]))
 		  }
 		}
 		  })
 
+		  glquantilesDifferencesWeighted.null <<- quantilesDifferencesWeighted.null
 		  if (verbose) {print('Time after fourth chunk'); print(d)}
 
 		# OR values for original data
 		  e <- system.time ({
-		  OR <- getOR(Dxy)
+		  ORoriginal <- getOR(Dxy)
 
 		# Find cut point
-		   corte <- (sort(c(ORnull)))[floor((1-alpha)*numGenes*B)]
+		   cutPoint <- (sort(c(ORbootstrap)))[floor((1-alpha)*numGenes*B)]
 
 		# Find individuals beyond threshold
-		   suspicious <- OR > corte
-		   ns <- sum(suspicious)
+		   suspicious <- ORoriginal > cutPoint
+		   numSuspicious <- sum(suspicious)
+		   
+		   glORbootstrap <<- ORbootstrap
+		   glORoriginal <<- ORoriginal
+		   glcutPoint <<- cutPoint
+		   glsuspicious <<- suspicious
+		   glnumSuspicious <<- numSuspicious
 
-		  selec.null <- which(ORnull > corte, arr.ind=TRUE)
-		  nnull <- dim(selec.null)[1]
+		   # the indices are in the form (case, bootstrap_sample)
+		  indicesBiDimORbootstrapBeyondCutPoint <- which(ORbootstrap > cutPoint, arr.ind=TRUE)
+		  
+		  numORbootstrapBeyondCutPoint <- dim(indicesBiDimORbootstrapBeyondCutPoint)[1]
+		  
+		  glindicesBiDimORbootstrapBeyondCutPoint <<- indicesBiDimORbootstrapBeyondCutPoint
+		  glnumORbootstrapBeyondCutPoint <<- numORbootstrapBeyondCutPoint
 		#
-		  mirar <- sample(1:fold, nnull, replace=TRUE) #
-		  # print(ns)
-		  # print(fold)
-		  apilar <- array(0, dim=c(ns, 3, fold)) })
+		  # vector of integers (assigned fold) of size numGenes * B * alpha
+		  assignFoldToBootstrapBeyondCutPoint <- sample(1:numFolds, numORbootstrapBeyondCutPoint, replace=TRUE) #
+		  glassignFoldToBootstrapBeyondCutPoint <<- assignFoldToBootstrapBeyondCutPoint
+		  
+		  # create a zero-filled 3D matrix with a 2D matrix of dim (numSuspicious, 3) for each fold
+		  # created to store FPneighbourghood, densityFP and radius
+		  originalDataFPStatistics <- array(0, dim=c(numSuspicious, 3, numFolds)) })
 
 		  if (verbose) {print('Time after fifth chunk'); print(e)}
 
-		# Que pasa en la capa 1
 		  f <- system.time ({
-		  for (j in 1:fold)
+		  for (j in 1:numFolds)
 		  {
-		      capa <- mirar == j
-		      nnull.red <- sum(capa)
-		      dat <- matrix(0, nrow=nnull.red, ncol=numProbs)
+		    # for every fold, we see how is the distribution of the OR statistic along the boostrap samples and the original ones
+		      currentFold <- assignFoldToBootstrapBeyondCutPoint == j
+		      numInCurrentFold <- sum(currentFold)
+		      quantilesBootstrapFold <- matrix(0, nrow=numInCurrentFold, ncol=numProbs)
+		      glcurrentFold <<- currentFold
+		      glnumInCurrentFold <<- numInCurrentFold
+		      glquantilesBootstrapFoldOriginal <<- quantilesBootstrapFold
 		      cont <- 1
-		      for (i in (1:nnull)[capa])
+		      indicesBeyondCutPointCurrentFold <- (1:numORbootstrapBeyondCutPoint)[currentFold]
+		      for (i in indicesBeyondCutPointCurrentFold)
 		      {
-			   f <- selec.null[i, 1]
-			   b <- selec.null[i, 2]
-			   dat[cont, ] <- quantilesDifferencesWeighted.null[f, , b]
-			   cont <- cont + 1
-		       }
-		      dat <- rbind(quantilesDifferencesWeighted[suspicious, ], dat)
-		      label <- c(rep(1, ns), rep(0, nnull.red))
-
-		    #  Dmix <- ICGE::dgower(dat, type=list(cuant=1:p))
-		    # dat <- dat*matrix(rep(weights, ns+nnull.red), byrow=TRUE, ncol=p) NO HAY QUE VOLVER A PONER LOS PESOS!!!
-		      Dmix <- dist(dat)
-		      Dmix <- as.matrix(Dmix)
-		      res <- matrix(0, nrow=ns, ncol=3)
-		      colnames(res) <- c( "FPneighbourghood", "densityFP", "radius")
-
-
-		      Dred <- Dmix[1:ns, ]
-		      for(i in 1:ns)
-		      {
-			  res[i, ] <- c(density(Dred[i, -i], label=label[-i], K))
+  			   numGene <- indicesBiDimORbootstrapBeyondCutPoint[i, 1]
+  			   numBootstrap <- indicesBiDimORbootstrapBeyondCutPoint[i, 2]
+  			   quantilesBootstrapFold[cont, ] <- quantilesDifferencesWeighted.null[numGene, , numBootstrap]
+  			   cont <- cont + 1
 		      }
-		      apilar[ , , j] <- res
-		  } })
+		      glquantilesBootstrapFoldAfterLoop <<- quantilesBootstrapFold
+		      quantilesOriginalPlusBootstrapFold <- rbind(quantilesDifferencesWeighted[suspicious, ], quantilesBootstrapFold)
+		      glquantilesOriginalPlusBootstrapFold <<- quantilesOriginalPlusBootstrapFold
+		      # after joining the original data with the bootstrap, we need the labels to find which is which
+		      label <- c(rep(1, numSuspicious), rep(0, numInCurrentFold))
+		      gllabel <<- label
 
+		      Dmix <- dist(quantilesOriginalPlusBootstrapFold)
+		      Dmix <- as.matrix(Dmix)
+		      originalDataFPStatisticsByFold <- matrix(0, nrow=numSuspicious, ncol=3)
+		      colnames(originalDataFPStatisticsByFold) <- c( "FPneighbourghood", "densityFP", "radius")
+
+		      DOriginal <- Dmix[1:numSuspicious, ]
+		      for(i in 1:numSuspicious)
+		      {
+		        originalDataFPStatisticsByFold[i, ] <- c(density(DOriginal[i, -i], label=label[-i], K))
+		      }
+		      glDOriginal <<- DOriginal
+		      gloriginalDataFPStatisticsByFold <<- originalDataFPStatisticsByFold
+		      originalDataFPStatistics[ , , j] <- originalDataFPStatisticsByFold
+		  } # end for (j in 1:numFolds)
+		    })
+
+		  gloriginalDataFPStatistics <<- originalDataFPStatistics
 		  if (verbose) {print('Time after sixth chunk'); print(f)}
 
 		  g <- system.time ({
-		   aux <- t(plyr::aaply(apilar, c(2,1), mean))
-		   auxx <- t(apply(apilar[, 1, ], 1, function(x){c(min(x), mean(x), max(x))}))
-		   ps <- ns/(ns+nnull/fold)
-		   p0 <- (nnull/fold)/(ns+nnull/fold)
-		   segununiforme <- aux[, 1] - p0
-		   genes <- (1:numGenes)[suspicious]
-		   print(genes)
-		   res <- cbind(genes, OR[suspicious], segununiforme, auxx, aux[, -1])
-		   row.names(res) <- NULL
-		   colnames(res) <- c("id", "OR", "DifExp",  "minFP", "FP", "maxFP", "dFP", "radius")
-		   oo <- order(res[, 3], -res[, 2])
+		    # means with respect to the folds
+		    originalDataFPStatisticsMeans <- t(plyr::aaply(originalDataFPStatistics, c(2,1), mean))
+		    originalDataFPNeighboursStats <- t(apply(originalDataFPStatistics[, 1, ], 1, function(x){c(min(x), mean(x), max(x))}))
+		    percentageSuspiciousOverPositives <- numSuspicious/(numSuspicious+numORbootstrapBeyondCutPoint/numFolds)
+		    percentageBoostrapOverPositives <- (numORbootstrapBeyondCutPoint/numFolds)/(numSuspicious+numORbootstrapBeyondCutPoint/numFolds)
+		    
+		    gloriginalDataFPStatisticsMeans <<- originalDataFPStatisticsMeans
+		    gloriginalDataFPNeighboursStats <<- originalDataFPNeighboursStats
+		    glpercentageSuspiciousOverPositives <<- percentageSuspiciousOverPositives
+		    glpercentageBoostrapOverPositives <<- percentageBoostrapOverPositives
+		    
+		    diffOverExpectedFPNeighbours <- originalDataFPStatisticsMeans[, 1] - percentageBoostrapOverPositives * K
+		    ####
+		    genes <- (1:numGenes)[suspicious]
+		    print(genes)
+		    finalResult <- cbind(genes, ORoriginal[suspicious], diffOverExpectedFPNeighbours, originalDataFPNeighboursStats, originalDataFPStatisticsMeans[, -1])
+		    row.names(finalResult) <- NULL
+		    colnames(finalResult) <- c("id", "OR", "DifExp",  "minFP", "FP", "maxFP", "dFP", "radius")
+		    glfinalResult <<- finalResult
+		    finalOrdering <- order(finalResult[, 3], -finalResult[, 2])
 		   # print(res[oo,])
-		   # print(ns)
+		   # print(numSuspicious)
 		   # print(c(ps, p0))
-		   # print(list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0)))
+		   # print(list("summary"=res[oo, ], "ns"=numSuspicious, "prop"=c(ps, p0)))
 		   })
 
 		   if (verbose) {print('Time after seventh chunk'); print(g)}
 
-		   object@out <- list("summary"=res[oo, ], "ns"=ns, "prop"=c(ps, p0, K))
+		   object@out <- list("summary"=finalResult[finalOrdering, ], "ns"=numSuspicious, "prop"=c(percentageSuspiciousOverPositives, percentageBoostrapOverPositives , K))
 		   # object
 		}
 	)
