@@ -5,6 +5,7 @@
 #' Class for representing ORdensity
 #'
 #' @name ORdensity
+#' @rdname ORdensity
 #' @exportClass ORdensity
 #'
 #' @author Itziar Irigoien, Concepcion Arenas, Jose Maria Martinez-Otzeta
@@ -19,14 +20,29 @@
 
 ORdensity <- setClass(
 	"ORdensity",
-	slots = c(positive="matrix", negative="matrix", out="list", OR="numeric", FP="numeric", dFP="numeric", char="data.frame", bestK = "numeric", verbose="logical", parallel="logical", replicable="logical", seed="numeric"),
-	prototype = list(positive=matrix(), negative=matrix(), out=list(), OR=numeric(), FP=numeric(), dFP=numeric(), char=data.frame(), bestK = numeric(), verbose=logical(), parallel=logical(), replicable=logical(), seed=numeric())
+	slots = c(positive="matrix", negative="matrix", labels="character", 
+	          B="numeric", scale="logical", alpha="numeric", 
+	          fold="numeric", weights="numeric", K="numeric", 
+	          out="list", OR="numeric", FP="numeric", dFP="numeric", char="data.frame", bestK = "numeric", 
+	          verbose="logical", parallel="logical", replicable="logical", seed="numeric"),
+	prototype = list(positive=matrix(), negative=matrix(), labels=character(), 
+	                 B=numeric(), scale=logical(), alpha=numeric(), 
+	                 fold=numeric(), weights=numeric(), K=numeric(), 
+	                 out=list(), OR=numeric(), FP=numeric(), dFP=numeric(), char=data.frame(), bestK = numeric(), 
+	                 verbose=logical(), parallel=logical(), replicable=logical(), seed=numeric())
 )
 
 # setGeneric("summary")
 
 # setGeneric("summary.ORdensity", function(object, ...) standardGeneric("summary.ORdensity"))
 
+#' @title summary
+#' @param 
+#' @return 
+#' @examples
+#' 
+#' @rdname summary
+#' @export
 setMethod("summary",
           signature = "ORdensity",
           definition = function(object){
@@ -59,6 +75,13 @@ setMethod("summary",
 
 setGeneric("preclusteredData", function(object, ...) standardGeneric("preclusteredData"))
 
+#' @title preclusteredData
+#' @param 
+#' @return 
+#' @examples
+#' 
+#' @rdname preclusteredData
+#' @export
 setMethod("preclusteredData",
           signature = "ORdensity",
           definition = function(object){
@@ -72,8 +95,8 @@ setMethod("preclusteredData",
               preclustered_data$radius <- NULL
               preclustered_data$Strong <- ifelse(preclustered_data$FP == 0, "S", "")
               preclustered_data$Flexible <- ifelse(preclustered_data$FP < p0 * neighbours, "F", "")
-              cat("Column Strong denotes the cases when FP=0\n")
-              cat("Column Flexible denotes the cases when FP < expectedFalsePositives\n")
+              cat("Columns \"Strong\" and \"Flexible\" show the genes identified as DE genes\n")
+              cat("They denote the strong selection (FP=0) with S and the flexible selection (FP < expectedFalsePositives) with F\n")
               preclustered_data
           }
 )
@@ -88,6 +111,13 @@ setMethod("preclusteredData",
 
 setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
 
+#' @title plotFPvsOR
+#' @param 
+#' @return 
+#' @examples
+#' 
+#' @rdname plotFPvsOR
+#' @export
 setMethod("plotFPvsOR",
   signature = "ORdensity",
   definition = function(object, k = object@bestK){
@@ -101,6 +131,13 @@ setMethod("plotFPvsOR",
 
 setGeneric("silhouetteAnalysis", function(object, ...) standardGeneric("silhouetteAnalysis"))
 
+#' @title silhouetteAnalysis
+#' @param 
+#' @return 
+#' @examples
+#' 
+#' @rdname silhouetteAnalysis
+#' @export
 setMethod("silhouetteAnalysis",
   signature = "ORdensity",
   definition = function(object){
@@ -117,6 +154,13 @@ setMethod("silhouetteAnalysis",
 
 setGeneric("clusplotk", function(object, ...) standardGeneric("clusplotk"))
 
+#' @title clusplotk
+#' @param 
+#' @return 
+#' @examples
+#' 
+#' @rdname clusplotk
+#' @export
 setMethod("clusplotk",
   signature = "ORdensity",
   definition = function(object, k = object@bestK){
@@ -164,6 +208,13 @@ getOR <- function(distObject)
 
 setGeneric("compute.ORdensity", function(object, ...) standardGeneric("compute.ORdensity"))
 
+#' @title compute.ORdensity
+#' @param 
+#' @return 
+#' @examples
+#' 
+#' @rdname compute.ORdensity
+#' @export
 setMethod("compute.ORdensity",
 	signature = "ORdensity",
 	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), weights=c(1/4,1/2,1/4), K = 10, verbose=FALSE, parallel = FALSE, replicable = TRUE, seed = 0) {
@@ -332,12 +383,24 @@ setMethod("compute.ORdensity",
 		    
 		    diffOverExpectedFPNeighbours <- originalDataFPStatisticsMeans[, 1] - percentageBoostrapOverPositives * K
 		    ####
-		    genes <- (1:numGenes)[suspicious]
+		    glnumGenes <<- numGenes
+		    glsuspicious <<- suspicious
+		    labelGenes <- object@labels
+		    # genes <- (1:numGenes)[suspicious]
+		    genes <- labelGenes[suspicious]
 		    print(genes)
-		    finalResult <- cbind(genes, ORoriginal[suspicious], diffOverExpectedFPNeighbours, originalDataFPNeighboursStats, originalDataFPStatisticsMeans[, -1])
+		    #finalResult <- cbind(genes, ORoriginal[suspicious], diffOverExpectedFPNeighbours, originalDataFPNeighboursStats, originalDataFPStatisticsMeans[, -1])
+		    #row.names(finalResult) <- NULL
+		    #colnames(finalResult) <- c("id", "OR", "DifExp",  "minFP", "FP", "maxFP", "dFP", "radius")
+		    #glfinalResult <<- finalResult
+		    #finalOrdering <- order(finalResult[, 3], -finalResult[, 2])
+		    finalResult <- data.frame("id"=genes, "OR"=ORoriginal[suspicious], "DifExp"=diffOverExpectedFPNeighbours,
+		                              "minFP"=originalDataFPNeighboursStats[,1], "FP"= originalDataFPNeighboursStats[,2],
+		                              "maxFP"=originalDataFPNeighboursStats[,3], "dFP"=originalDataFPStatisticsMeans[, 2],
+		                              "radius"=originalDataFPStatisticsMeans[, 3])
+		    finalResult$id <- as.character(finalResult$id)
 		    row.names(finalResult) <- NULL
-		    colnames(finalResult) <- c("id", "OR", "DifExp",  "minFP", "FP", "maxFP", "dFP", "radius")
-		    glfinalResult <<- finalResult
+		    finalResult <<- finalResult
 		    finalOrdering <- order(finalResult[, 3], -finalResult[, 2])
 		   # print(res[oo,])
 		   # print(numSuspicious)
@@ -374,15 +437,35 @@ setValidity("ORdensity", function(object) {
 }
 )
 
-setMethod("initialize", "ORdensity", function(.Object, positive, negative, out, OR, FP, dFP, char, bestK, verbose = FALSE, parallel = FALSE, replicable = TRUE, seed = 0) {
-  .Object@positive <- positive
-  .Object@negative <- negative
+setMethod("initialize", "ORdensity", function(.Object, Exp_cond_1, Exp_cond_2, labels = NULL, B=100, scale=FALSE, alpha=0.05, 
+                                              fold=floor(B/10), weights=c(1/4,1/2,1/4), K = 10, 
+                                              out, OR, FP, dFP, char, bestK, verbose = FALSE, 
+                                              parallel = FALSE, replicable = TRUE, seed = 0) {
+  .Object@positive <- Exp_cond_1
+  .Object@negative <- Exp_cond_2
   # validObject(.Object)
+  if (is.null(labels))
+  { 
+    .Object@labels<- paste("Gene", 1:nrow(positive), sep="")
+  }
+  else
+  {
+    .Object@labels <- labels
+  }
+  .Object@B <- B
+  .Object@scale <- scale
+  .Object@alpha <- alpha
+  .Object@fold <- fold
+  .Object@weights <- weights
+  .Object@K <- K
   .Object@verbose <- verbose
   .Object@parallel <- parallel
   .Object@replicable <- replicable
   .Object@seed <- seed
-  .Object@out <- compute.ORdensity(.Object, verbose = .Object@verbose, parallel = .Object@parallel, replicable = .Object@replicable, seed = .Object@seed)
+  .Object@out <- compute.ORdensity(.Object, B = .Object@B, scale = .Object@scale, alpha = .Object@alpha, fold = .Object@fold, 
+                                   weights = .Object@weights, K = .Object@K, 
+                                   verbose = .Object@verbose, parallel = .Object@parallel, replicable = .Object@replicable, 
+                                   seed = .Object@seed)
   .Object@OR <- .Object@out$summary[, "OR"]
   .Object@FP <- .Object@out$summary[, "FP"]
   .Object@dFP <- .Object@out$summary[, "dFP"]
@@ -394,6 +477,13 @@ setMethod("initialize", "ORdensity", function(.Object, positive, negative, out, 
 
 setGeneric("findbestK", function(object, ...) standardGeneric("findbestK"))
 
+#' @title findbestK
+#' @param 
+#' @return 
+#' @examples
+#' 
+#' @rdname findbestK
+#' @export
 setMethod("findbestK",
           signature = "ORdensity",
           definition = function(object){
@@ -410,6 +500,13 @@ setMethod("findbestK",
 
 setGeneric("findDEgenes", function(object, ...) standardGeneric("findDEgenes"))
 
+#' @title findDEgenes
+#' @param 
+#' @return 
+#' @examples
+#' 
+#' @rdname findDEgenes
+#' @export
 setMethod("findDEgenes",
           signature = "ORdensity",
           definition = function(object){
@@ -430,7 +527,8 @@ setMethod("findDEgenes",
             DFgenes <- list()
             for (k in 1:object@bestK)
             {
-              DFgenes[[k]] <- list("cluster_number"=k, "genes"=sort(clusters[[k]][,'id']), "meanOR"=mean(clusters[[k]][,'OR']))
+              # DFgenes[[k]] <- list("cluster_number"=k, "genes"=sort(clusters[[k]][,'id']), "meanOR"=mean(clusters[[k]][,'OR']))
+              DFgenes[[k]] <- list("cluster_number"=k, "numberOfGenes"=length(clusters[[k]][,'id']), "meanOR"=mean(clusters[[k]][,'OR']))
             }
             cat("The ORdensity method has found that the optimal clustering of the data consists of",object@bestK,"clusters\n")
             # return(list("DFgenes"=DFgenes,"clusters"=clusters))

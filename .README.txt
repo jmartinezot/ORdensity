@@ -21,6 +21,8 @@ To generate documentation and NAMESPACE file:
 setwd('/home/bee/Github/ORdensity/')
 devtools::document() 
 
+library(help="ORdensity")
+
 Remove the package from the current installation using
 
 sudo R
@@ -55,7 +57,7 @@ randomA <- matrix(rnorm(30*100), nrow = 100)
 randomB <- matrix(rnorm(30*100), nrow = 100)
 genLabels <- paste("SimulatedGene", 1:nrow(positive), sep="")
 # myORdensity <- new("ORdensity", positive = positive, negative = negative, genIDs = genLabels, parallel = TRUE)
-myORdensity <- new("ORdensity", positive = positive, negative = negative, parallel = TRUE)
+myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = TRUE)
 out <- myORdensity@out
 #res <- as.data.frame(out$res)
 #res[order(res$OR, decreasing = TRUE),]
