@@ -1,18 +1,18 @@
 # ORdensity
 
-In this repository is located the R package that implements the statistical method presented in the paper [Identification of differentially expressed genes by means of outlier detection](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-018-2318-8).
+In this repository is located the R package ORdensity that implements the statistical method presented in the paper [Identification of differentially expressed genes by means of outlier detection](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-018-2318-8) by Irigoien and Arenas, BMC Bioinformatics 2018 (\[1\]).
 
 ## Introduction
 
-An important issue in microarray data is to select, from thousands of genes, a small number of informative differentially expressed (DE) genes which may be key elements for a disease. If each gene is analyzed individually, there is a big number of hypotheses to test and a multiple comparison correction method must be used. Consequently, the resulting cut-off value may be too small. Moreover, an important issue is the selection’s replicability of the DE genes. We present a new method, called ORdensity, to obtain a reproducible selection of DE genes. It takes into account the relation between all genes and it is not a gene-by-gene approach, unlike the usually applied techniques to DE gene selection.
-
-The proposed method returns three measures, related to the concepts of outlier and density of false positives in a neighbourhood, which allow us to identify the DE genes with high classification accuracy. The first measure is a statistic called OR, introduced in \[1\]\[2\]
+An important issue in microarray data is to select, from thousands of genes, a small number of informative differentially expressed (DE) genes that may be key elements for a disease. If each gene is analyzed individually, there is a big number of hypotheses to test and a multiple comparison correction method must be used. Consequently, the resulting cut-off value may be too small. Moreover, an important issue is the selection’s replicability of the DE genes. The package ORdensity is designed to obtain a reproducible selection of DE genes by the method presented in \[1\], which is not a gene-by-gene approach. The core function 'findDEgenes' provides three measures related to the concepts of outlier and density of false positives in a neighbourhood, which allow identify the DE genes with high classification accuracy. The first measure is an index called OR and previously introduced in \[2, 3\]; the other two measures called FP and dFP were introduced in \[1\]. Additional functions provided in this package like 'preclusteredData' and 'plotFPvsOR' facilitate exploring and understanding the results.  As, working with large datasets, long execution times and great computational efforts are required, parallelization strategies were used to perform the analysis in a short time.
 
 ## References
 
-\[1\] Arenas C, Toma C, Cormand B, Irigoien I. [Identifying extreme observations, outliers and noise in clinical and genetic data.](http://www.eurekaselect.com/142998/article) Current Bioinformatics 2017;12(2):101–17.
+\[1\] Irigoien I, Arenas C. [Identification of differentially expressed genes by means of outlier detection](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-018-2318-8). 19(1): 317:1–317:20 (2018)
 
-\[2\] Arenas C, Irigoien I, Mestres F, Toma C, Cormand B. [Extreme observations in biomedical data.](https://link.springer.com/chapter/10.1007/978-3-319-55639-0_1) In: Ainsbury EA, Calle ML, Cardis E, et al., editors. Extended Abstracts Fall 2015. Trends in Mathematics vol 7. Birkhäuser, Cham: Springer; 2017. p. 3–8.
+\[2\] Arenas C, Toma C, Cormand B, Irigoien I. [Identifying extreme observations, outliers and noise in clinical and genetic data.](http://www.eurekaselect.com/142998/article) Current Bioinformatics 2017;12(2):101–17.
+
+\[3\] Arenas C, Irigoien I, Mestres F, Toma C, Cormand B. [Extreme observations in biomedical data.](https://link.springer.com/chapter/10.1007/978-3-319-55639-0_1) In: Ainsbury EA, Calle ML, Cardis E, et al., editors. Extended Abstracts Fall 2015. Trends in Mathematics vol 7. Birkhäuser, Cham: Springer; 2017. p. 3–8.
 
 ## Installation
 
@@ -35,28 +35,28 @@ library('ORdensity')
 
 There is a example dataframe called ```example``` shipped with the package. This data is the result of a simulation of 100 differentially expressed genes in a pool of 1000 genes. It contains 1000 observations of 62 variables. Each row correspond to a gene and contains 62 values: DEgen, gap and the values for the gene expression in 30 positive cases and in 30 negative cases. The DEgen field value is 1 for differentially expressed genes and 0 for those which are not.
 
-First, let us extract the positive and negative cases from the ```example``` database.
+First, let us extract the samples from each experimental condition from the ```example``` database.
 
 ```
 x <- example[, 3:32]
 y <- example[, 33:62]
-positive <- as.matrix(x)
-negative <- as.matrix(y)
+EXC.1 <- as.matrix(x)
+EXC.2 <- as.matrix(y)
 ```
-To create an S4 object to perform the analysis, follow this syntaxis 
+To create an S4 object to perform the analysis, follow this command
 
 ```
-myORdensity <- new("ORdensity", positive = positive, negative = negative)
+myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
 ```
 By default, no parallelizing is enabled. To enable it, just run instead
 
 ```
-myORdensity <- new("ORdensity", positive = positive, negative = negative, parallel = TRUE)
+myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2, parallel = TRUE)
 ```
 It is also possible to enable or disable replicability, and to pass the seed to the pseudorandom number generator. The default values are 
 
 ```
-myORdensity <- new("ORdensity", positive = positive, negative = negative, replicable = TRUE, seed = 0)
+myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2, replicable = TRUE, seed = 0)
 ```
 with the function using the given seed to set the random generator. If replicable = FALSE, no seed is used.
 
@@ -68,13 +68,13 @@ For example, after running this code
 result <- findDEgenes(myORdensity)
 ```
 
-and being told that the optimal clustering consists of just two clusters, 
+the method indicated that the optimal clustering consists of just two clusters, 
 
 ```
 The ORdensity method has found that the optimal clustering of the data consists of 2 clusters
 ```
 
-we could then take a look to the genes corresponding to the generated clusters
+we could then look the number of genes in each cluster genes and the mean values of index OR in each cluster
 
 ```
 > result
