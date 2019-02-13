@@ -73,18 +73,25 @@ setMethod("summary",
         }
 )
 
+#' preclusteredData
+#' 
+#' This function returns the data after applying the ORdensity procedure, but before doing any clustering
+#' 
+#' @param object Object of type ORdensity
+#' @return The data before doing any clustering
+#' @examples
+#' randomA <- matrix(rnorm(30*100), nrow = 100)
+#' randomB <- matrix(rnorm(30*100), nrow = 100)
+#' myORdensity <- new("ORdensity", Exp_cond_1 = randomA, Exp_cond_2 = randomB, parallel = TRUE)
+#' preclusteredData(myORdensity)
+#' @rdname preclusteredData
+#' @docType methods
+#' @export
 setGeneric("preclusteredData", function(object, ...) standardGeneric("preclusteredData"))
 
-#' @title preclusteredData
-#' @param 
-#' @return 
-#' @examples
-#' 
-#' @rdname preclusteredData
-#' @export
 setMethod("preclusteredData",
           signature = "ORdensity",
-          definition = function(object){
+          definition = function(object, verbose=TRUE){
               prop <- object@out$prop
               neighbours <- prop[3]
               p0 <- prop[2]
@@ -95,21 +102,33 @@ setMethod("preclusteredData",
               preclustered_data$radius <- NULL
               preclustered_data$Strong <- ifelse(preclustered_data$FP == 0, "S", "")
               preclustered_data$Flexible <- ifelse(preclustered_data$FP < p0 * neighbours, "F", "")
-              cat("Columns \"Strong\" and \"Flexible\" show the genes identified as DE genes\n")
-              cat("They denote the strong selection (FP=0) with S and the flexible selection (FP < expectedFalsePositives) with F\n")
+              if (verbose) {
+                cat("Columns \"Strong\" and \"Flexible\" show the genes identified as DE genes\n")
+                cat("They denote the strong selection (FP=0) with S and the flexible selection (FP < expectedFalsePositives) with F\n")
+              }
               preclustered_data
           }
 )
 
-#setMethod("show",
-#          signature = "ORdensity",
-#          definition = function(object) {
-#            cat("Positive data matrix: ", object@positive, "\n", sep = " ")
-#            cat("Negative data matrix: ", object@negative, "\n", sep = " ")
-#          }
-#)
-
-setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
+#' @title print
+#' @param 
+#' @return 
+#' @examples
+#' 
+#' @rdname print
+#' @export
+setMethod("show",
+           signature = "ORdensity",
+           definition = function(object) {
+             preClustering <- preclusteredData(object, verbose=FALSE)
+             numGenes <- nrow(preClustering)
+             cat("The ORdensity method has detected", numGenes, "suspicious genes\n", sep = " ")
+             cat("The data before clustering is: \n")
+             cat("Columns \"Strong\" and \"Flexible\" show the genes identified as DE genes\n")
+             cat("They denote the strong selection (FP=0) with S and the flexible selection (FP < expectedFalsePositives) with F\n")
+             print(preClustering)
+           }
+)
 
 #' @title plotFPvsOR
 #' @param 
@@ -118,6 +137,8 @@ setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
 #' 
 #' @rdname plotFPvsOR
 #' @export
+setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
+
 setMethod("plotFPvsOR",
   signature = "ORdensity",
   definition = function(object, k = object@bestK){
@@ -129,8 +150,6 @@ setMethod("plotFPvsOR",
     }
   )
 
-setGeneric("silhouetteAnalysis", function(object, ...) standardGeneric("silhouetteAnalysis"))
-
 #' @title silhouetteAnalysis
 #' @param 
 #' @return 
@@ -138,6 +157,8 @@ setGeneric("silhouetteAnalysis", function(object, ...) standardGeneric("silhouet
 #' 
 #' @rdname silhouetteAnalysis
 #' @export
+setGeneric("silhouetteAnalysis", function(object, ...) standardGeneric("silhouetteAnalysis"))
+
 setMethod("silhouetteAnalysis",
   signature = "ORdensity",
   definition = function(object){
@@ -152,8 +173,6 @@ setMethod("silhouetteAnalysis",
   }
   )
 
-setGeneric("clusplotk", function(object, ...) standardGeneric("clusplotk"))
-
 #' @title clusplotk
 #' @param 
 #' @return 
@@ -161,6 +180,8 @@ setGeneric("clusplotk", function(object, ...) standardGeneric("clusplotk"))
 #' 
 #' @rdname clusplotk
 #' @export
+setGeneric("clusplotk", function(object, ...) standardGeneric("clusplotk"))
+
 setMethod("clusplotk",
   signature = "ORdensity",
   definition = function(object, k = object@bestK){
@@ -206,8 +227,6 @@ getOR <- function(distObject)
   return(OR)
 }
 
-setGeneric("compute.ORdensity", function(object, ...) standardGeneric("compute.ORdensity"))
-
 #' @title compute.ORdensity
 #' @param 
 #' @return 
@@ -215,6 +234,8 @@ setGeneric("compute.ORdensity", function(object, ...) standardGeneric("compute.O
 #' 
 #' @rdname compute.ORdensity
 #' @export
+setGeneric("compute.ORdensity", function(object, ...) standardGeneric("compute.ORdensity"))
+
 setMethod("compute.ORdensity",
 	signature = "ORdensity",
 	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), weights=c(1/4,1/2,1/4), K = 10, verbose=FALSE, parallel = FALSE, replicable = TRUE, seed = 0) {
@@ -388,7 +409,7 @@ setMethod("compute.ORdensity",
 		    labelGenes <- object@labels
 		    # genes <- (1:numGenes)[suspicious]
 		    genes <- labelGenes[suspicious]
-		    print(genes)
+		    # print(genes)
 		    #finalResult <- cbind(genes, ORoriginal[suspicious], diffOverExpectedFPNeighbours, originalDataFPNeighboursStats, originalDataFPStatisticsMeans[, -1])
 		    #row.names(finalResult) <- NULL
 		    #colnames(finalResult) <- c("id", "OR", "DifExp",  "minFP", "FP", "maxFP", "dFP", "radius")
@@ -475,8 +496,6 @@ setMethod("initialize", "ORdensity", function(.Object, Exp_cond_1, Exp_cond_2, l
   .Object
 })
 
-setGeneric("findbestK", function(object, ...) standardGeneric("findbestK"))
-
 #' @title findbestK
 #' @param 
 #' @return 
@@ -484,6 +503,8 @@ setGeneric("findbestK", function(object, ...) standardGeneric("findbestK"))
 #' 
 #' @rdname findbestK
 #' @export
+setGeneric("findbestK", function(object, ...) standardGeneric("findbestK"))
+
 setMethod("findbestK",
           signature = "ORdensity",
           definition = function(object){
@@ -498,8 +519,6 @@ setMethod("findbestK",
           }
 )
 
-setGeneric("findDEgenes", function(object, ...) standardGeneric("findDEgenes"))
-
 #' @title findDEgenes
 #' @param 
 #' @return 
@@ -507,30 +526,49 @@ setGeneric("findDEgenes", function(object, ...) standardGeneric("findDEgenes"))
 #' 
 #' @rdname findDEgenes
 #' @export
+setGeneric("findDEgenes", function(object, ...) standardGeneric("findDEgenes"))
+
 setMethod("findDEgenes",
           signature = "ORdensity",
-          definition = function(object){
-            clustering <- pam(dist(scale(object@char)), object@bestK)$clustering
+          definition = function(object, numclusters=NULL, verbose=FALSE){
+            KForClustering <- object@bestK
+            if (!is.null(numclusters))
+            {
+              KForClustering <- numclusters
+            }
+            clustering <- pam(dist(scale(object@char)), KForClustering)$clustering
             result_prov <- list()
             meanOR <- list()
-            for (k in 1:object@bestK)
+            for (k in 1:KForClustering)
             {
               result_prov[[k]] <- object@out$summary[clustering==k,]
               meanOR[[k]] <- mean(result_prov[[k]][,'OR'])
             }
             clusters_ordering <- order(as.numeric(meanOR), decreasing = TRUE)
             clusters <- list()
-            for (k in 1:object@bestK)
+            for (k in 1:KForClustering)
             {
               clusters[[k]] <- result_prov[[clusters_ordering[k]]]
             }
             DFgenes <- list()
-            for (k in 1:object@bestK)
+            for (k in 1:KForClustering)
             {
               # DFgenes[[k]] <- list("cluster_number"=k, "genes"=sort(clusters[[k]][,'id']), "meanOR"=mean(clusters[[k]][,'OR']))
-              DFgenes[[k]] <- list("cluster_number"=k, "numberOfGenes"=length(clusters[[k]][,'id']), "meanOR"=mean(clusters[[k]][,'OR']))
+              if (verbose)
+              {
+                DFgenes[[k]] <- list("cluster_number"=k, "numberOfGenes"=length(clusters[[k]][,'id']), 
+                                     "meanOR"=mean(clusters[[k]][,'OR']), "genes"=sort(clusters[[k]][,'id']))
+              }
+              else
+              {
+                DFgenes[[k]] <- list("cluster_number"=k, "numberOfGenes"=length(clusters[[k]][,'id']), "meanOR"=mean(clusters[[k]][,'OR']))
+              }
             }
             cat("The ORdensity method has found that the optimal clustering of the data consists of",object@bestK,"clusters\n")
+            if (!is.null(numclusters))
+            {
+              cat("The user has chosen a clustering of",numclusters,"clusters\n")
+            }
             # return(list("DFgenes"=DFgenes,"clusters"=clusters))
             return(DFgenes)
           }
