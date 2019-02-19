@@ -22,12 +22,12 @@ ORdensity <- setClass(
 	"ORdensity",
 	slots = c(positive="matrix", negative="matrix", labels="character", 
 	          B="numeric", scale="logical", alpha="numeric", 
-	          fold="numeric", weights="numeric", K="numeric", 
+	          fold="numeric", probs="numeric", weights="numeric", K="numeric", 
 	          out="list", OR="numeric", FP="numeric", dFP="numeric", char="data.frame", bestK = "numeric", 
 	          verbose="logical", parallel="logical", replicable="logical", seed="numeric"),
 	prototype = list(positive=matrix(), negative=matrix(), labels=character(), 
 	                 B=numeric(), scale=logical(), alpha=numeric(), 
-	                 fold=numeric(), weights=numeric(), K=numeric(), 
+	                 fold=numeric(), probs=numeric(), weights=numeric(), K=numeric(), 
 	                 out=list(), OR=numeric(), FP=numeric(), dFP=numeric(), char=data.frame(), bestK = numeric(), 
 	                 verbose=logical(), parallel=logical(), replicable=logical(), seed=numeric())
 )
@@ -238,7 +238,7 @@ setGeneric("compute.ORdensity", function(object, ...) standardGeneric("compute.O
 
 setMethod("compute.ORdensity",
 	signature = "ORdensity",
-	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), weights=c(1/4,1/2,1/4), K = 10, verbose=FALSE, parallel = FALSE, replicable = TRUE, seed = 0) {
+	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), probs=c(0.25, 0.5, 0.75), weights=c(1/4,1/2,1/4), K = 10, verbose=FALSE, parallel = FALSE, replicable = TRUE, seed = 0) {
 	    a <- system.time ({
 	    positiveCases <- as.matrix(object@positive)
 		  negativeCases <- as.matrix(object@negative)
@@ -246,7 +246,6 @@ setMethod("compute.ORdensity",
 		  numPositiveCases <- dim(positiveCases)[2]
 		  numNegativeCases <- dim(negativeCases)[2]
 		  numCases <- numPositiveCases + numNegativeCases
-		  probs=c(0.25, 0.5, 0.75)
 		  numProbs <- length(probs)
 		  numFolds <- fold})
 
@@ -307,7 +306,6 @@ setMethod("compute.ORdensity",
 		}
 		  })
 
-		  glquantilesDifferencesWeighted.null <<- quantilesDifferencesWeighted.null
 		  if (verbose) {print('Time after fourth chunk'); print(d)}
 
 		# OR values for original data
@@ -320,24 +318,15 @@ setMethod("compute.ORdensity",
 		# Find individuals beyond threshold
 		   suspicious <- ORoriginal > cutPoint
 		   numSuspicious <- sum(suspicious)
-		   
-		   glORbootstrap <<- ORbootstrap
-		   glORoriginal <<- ORoriginal
-		   glcutPoint <<- cutPoint
-		   glsuspicious <<- suspicious
-		   glnumSuspicious <<- numSuspicious
 
 		   # the indices are in the form (case, bootstrap_sample)
 		  indicesBiDimORbootstrapBeyondCutPoint <- which(ORbootstrap > cutPoint, arr.ind=TRUE)
 		  
 		  numORbootstrapBeyondCutPoint <- dim(indicesBiDimORbootstrapBeyondCutPoint)[1]
 		  
-		  glindicesBiDimORbootstrapBeyondCutPoint <<- indicesBiDimORbootstrapBeyondCutPoint
-		  glnumORbootstrapBeyondCutPoint <<- numORbootstrapBeyondCutPoint
 		#
 		  # vector of integers (assigned fold) of size numGenes * B * alpha
 		  assignFoldToBootstrapBeyondCutPoint <- sample(1:numFolds, numORbootstrapBeyondCutPoint, replace=TRUE) #
-		  glassignFoldToBootstrapBeyondCutPoint <<- assignFoldToBootstrapBeyondCutPoint
 		  
 		  # create a zero-filled 3D matrix with a 2D matrix of dim (numSuspicious, 3) for each fold
 		  # created to store FPneighbourghood, densityFP and radius
@@ -352,9 +341,6 @@ setMethod("compute.ORdensity",
 		      currentFold <- assignFoldToBootstrapBeyondCutPoint == j
 		      numInCurrentFold <- sum(currentFold)
 		      quantilesBootstrapFold <- matrix(0, nrow=numInCurrentFold, ncol=numProbs)
-		      glcurrentFold <<- currentFold
-		      glnumInCurrentFold <<- numInCurrentFold
-		      glquantilesBootstrapFoldOriginal <<- quantilesBootstrapFold
 		      cont <- 1
 		      indicesBeyondCutPointCurrentFold <- (1:numORbootstrapBeyondCutPoint)[currentFold]
 		      for (i in indicesBeyondCutPointCurrentFold)
@@ -364,12 +350,9 @@ setMethod("compute.ORdensity",
   			   quantilesBootstrapFold[cont, ] <- quantilesDifferencesWeighted.null[numGene, , numBootstrap]
   			   cont <- cont + 1
 		      }
-		      glquantilesBootstrapFoldAfterLoop <<- quantilesBootstrapFold
 		      quantilesOriginalPlusBootstrapFold <- rbind(quantilesDifferencesWeighted[suspicious, ], quantilesBootstrapFold)
-		      glquantilesOriginalPlusBootstrapFold <<- quantilesOriginalPlusBootstrapFold
 		      # after joining the original data with the bootstrap, we need the labels to find which is which
 		      label <- c(rep(1, numSuspicious), rep(0, numInCurrentFold))
-		      gllabel <<- label
 
 		      Dmix <- dist(quantilesOriginalPlusBootstrapFold)
 		      Dmix <- as.matrix(Dmix)
@@ -381,13 +364,10 @@ setMethod("compute.ORdensity",
 		      {
 		        originalDataFPStatisticsByFold[i, ] <- c(density(DOriginal[i, -i], label=label[-i], K))
 		      }
-		      glDOriginal <<- DOriginal
-		      gloriginalDataFPStatisticsByFold <<- originalDataFPStatisticsByFold
 		      originalDataFPStatistics[ , , j] <- originalDataFPStatisticsByFold
 		  } # end for (j in 1:numFolds)
 		    })
 
-		  gloriginalDataFPStatistics <<- originalDataFPStatistics
 		  if (verbose) {print('Time after sixth chunk'); print(f)}
 
 		  g <- system.time ({
@@ -397,15 +377,8 @@ setMethod("compute.ORdensity",
 		    percentageSuspiciousOverPositives <- numSuspicious/(numSuspicious+numORbootstrapBeyondCutPoint/numFolds)
 		    percentageBoostrapOverPositives <- (numORbootstrapBeyondCutPoint/numFolds)/(numSuspicious+numORbootstrapBeyondCutPoint/numFolds)
 		    
-		    gloriginalDataFPStatisticsMeans <<- originalDataFPStatisticsMeans
-		    gloriginalDataFPNeighboursStats <<- originalDataFPNeighboursStats
-		    glpercentageSuspiciousOverPositives <<- percentageSuspiciousOverPositives
-		    glpercentageBoostrapOverPositives <<- percentageBoostrapOverPositives
-		    
 		    diffOverExpectedFPNeighbours <- originalDataFPStatisticsMeans[, 1] - percentageBoostrapOverPositives * K
 		    ####
-		    glnumGenes <<- numGenes
-		    glsuspicious <<- suspicious
 		    labelGenes <- object@labels
 		    # genes <- (1:numGenes)[suspicious]
 		    genes <- labelGenes[suspicious]
@@ -421,7 +394,6 @@ setMethod("compute.ORdensity",
 		                              "radius"=originalDataFPStatisticsMeans[, 3])
 		    finalResult$id <- as.character(finalResult$id)
 		    row.names(finalResult) <- NULL
-		    finalResult <<- finalResult
 		    finalOrdering <- order(finalResult[, 3], -finalResult[, 2])
 		   # print(res[oo,])
 		   # print(numSuspicious)
@@ -459,7 +431,7 @@ setValidity("ORdensity", function(object) {
 )
 
 setMethod("initialize", "ORdensity", function(.Object, Exp_cond_1, Exp_cond_2, labels = NULL, B=100, scale=FALSE, alpha=0.05, 
-                                              fold=floor(B/10), weights=c(1/4,1/2,1/4), K = 10, 
+                                              fold=floor(B/10), probs=c(0.25, 0.5, 0.75), weights=c(1/4,1/2,1/4), K = 10, 
                                               out, OR, FP, dFP, char, bestK, verbose = FALSE, 
                                               parallel = FALSE, replicable = TRUE, seed = 0) {
   .Object@positive <- Exp_cond_1
@@ -467,7 +439,7 @@ setMethod("initialize", "ORdensity", function(.Object, Exp_cond_1, Exp_cond_2, l
   # validObject(.Object)
   if (is.null(labels))
   { 
-    .Object@labels<- paste("Gene", 1:nrow(positive), sep="")
+    .Object@labels<- paste("Gene", 1:nrow(Exp_cond_1), sep="")
   }
   else
   {
@@ -477,6 +449,7 @@ setMethod("initialize", "ORdensity", function(.Object, Exp_cond_1, Exp_cond_2, l
   .Object@scale <- scale
   .Object@alpha <- alpha
   .Object@fold <- fold
+  .Object@probs <- probs
   .Object@weights <- weights
   .Object@K <- K
   .Object@verbose <- verbose
@@ -484,7 +457,7 @@ setMethod("initialize", "ORdensity", function(.Object, Exp_cond_1, Exp_cond_2, l
   .Object@replicable <- replicable
   .Object@seed <- seed
   .Object@out <- compute.ORdensity(.Object, B = .Object@B, scale = .Object@scale, alpha = .Object@alpha, fold = .Object@fold, 
-                                   weights = .Object@weights, K = .Object@K, 
+                                   probs = .Object@probs, weights = .Object@weights, K = .Object@K, 
                                    verbose = .Object@verbose, parallel = .Object@parallel, replicable = .Object@replicable, 
                                    seed = .Object@seed)
   .Object@OR <- .Object@out$summary[, "OR"]
