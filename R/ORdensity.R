@@ -17,6 +17,10 @@
 #' @export findDEgenes
 #' @export summary
 #' @export preclusteredData
+#' 
+ 
+
+euc_dist <- function(m) {mtm <- Matrix::tcrossprod(m); sq <- rowSums(m*m);  sqrt(outer(sq,sq,"+") - 2*mtm)} 
 
 ORdensity <- setClass(
 	"ORdensity",
@@ -248,6 +252,9 @@ setMethod("compute.ORdensity",
 		  numCases <- numPositiveCases + numNegativeCases
 		  numProbs <- length(probs)
 		  numFolds <- fold})
+	    
+	    require(wordspace)
+	    require(Matrix)
 
 		  if (verbose) {print('Time after first chunk'); print(a)}
 
@@ -276,7 +283,7 @@ setMethod("compute.ORdensity",
 
 		  # require(bigstatsr)
 	    nproc <- parallel::detectCores()
-		  cl <- parallel::makeCluster(nproc)
+		  cl <- parallel::makeForkCluster(nproc)
 		  doParallel::registerDoParallel(cl)
       res_par <- foreach(b = 1:B, .combine = 'c', .options.RNG=seed) %dorng% {
         bootstrapSample <- getBootstrapSample(allCases, numPositiveCases)
@@ -299,9 +306,20 @@ setMethod("compute.ORdensity",
 		  }
 		  for (b in 1:B)
 		  {
-		    bootstrapSample <- getBootstrapSample(allCases, numPositiveCases)
-		    quantilesDifferencesWeighted.null[ , ,b] <- getQuantilesDifferencesWeighted(bootstrapSample$positives, bootstrapSample$negatives, scale, weights, probs)
-		    ORbootstrap[, b] <- getOR(dist(quantilesDifferencesWeighted.null[,,b]))
+		    w <- system.time({
+		      w1 <- system.time({
+		    bootstrapSample <- getBootstrapSample(allCases, numPositiveCases)})
+		      if (verbose) {print('Time after a non-parallel bootstrap replication (step 1)'); print(w1)}
+		      w2 <- system.time({
+		    quantilesDifferencesWeighted.null[ , ,b] <- getQuantilesDifferencesWeighted(bootstrapSample$positives, bootstrapSample$negatives, scale, weights, probs)})
+		      if (verbose) {print('Time after a non-parallel bootstrap replication (step 2)'); print(w2)}
+		      w3 <- system.time({
+		       ORbootstrap[, b] <- getOR(dist(quantilesDifferencesWeighted.null[,,b]))})
+		       # ORbootstrap[, b] <- getOR(dist.matrix(quantilesDifferencesWeighted.null[,,b], method="euclidean"))})
+		       # ORbootstrap[, b] <- getOR(euc_dist(quantilesDifferencesWeighted.null[,,b]))})
+		      if (verbose) {print('Time after a non-parallel bootstrap replication (step 3)'); print(w3)}
+		    })
+		    if (verbose) {print('Time after a non-parallel bootstrap replication'); print(w)}
 		  }
 		}
 		  })
@@ -334,6 +352,8 @@ setMethod("compute.ORdensity",
 
 		  if (verbose) {print('Time after fifth chunk'); print(e)}
 
+		  globalquantilesDifferencesWeighted.null <<- quantilesDifferencesWeighted.null
+		  
 		  f <- system.time ({
 		  for (j in 1:numFolds)
 		  {
@@ -482,8 +502,11 @@ setMethod("findbestK",
           signature = "ORdensity",
           definition = function(object){
             s <- rep(NA, 10)
+            # len(object@char) could be less than 10
             for (k in 2:10)
             {
+              print(k)
+              shit <<- object@char
               aux <- pam(dist(scale(object@char)), k)
               s[k] <- mean(silhouette(aux)[, "sil_width"])
             }

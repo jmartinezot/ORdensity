@@ -66,6 +66,201 @@ myclust <- findDEgenes(myORdensity)
 result <- findDEgenes(myORdensity)
 # myORdensity <- new("ORdensity", positive = randomA, negative = randomB)
 
+randomA <- matrix(rnorm(30*100), nrow = 100)
+randomB <- matrix(rnorm(30*100), nrow = 100)
+myORdensity <- new("ORdensity", Exp_cond_1 = randomA, Exp_cond_2 = randomB, parallel = TRUE)
+
+a <- read.csv('/home/bee/Github/ItziarParallelizing/WeTransfer/Datos_n20000.dat', sep=" ", header=TRUE)
+x <- a[, 2:31]
+y <- a[, 32:61]
+positive <- as.matrix(x)
+negative <- as.matrix(y)
+library(pryr)
+system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = TRUE))
+system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = FALSE))
+#mem_change(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = TRUE))
+#mem_change(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = FALSE))
+
+# Datos_n1000.dat
+# Parallel = TRUE
+#    user  system elapsed 
+# 41.838   1.282   6.984 
+# Parallel = FALSE
+#   user  system elapsed 
+# 24.010   0.286  24.294 
+
+# Datos_n5000.dat
+# Parallel = TRUE
+#   user  system elapsed 
+# 526.226  61.426  90.359 
+# Parallel = FALSE
+# user  system elapsed 
+# 281.336  39.367 320.674  
+
+# Datos_n5000.dat
+# Parallel = TRUE
+# Error in unserialize(socklist[[n]]) : error reading from connection
+# Timing stopped at: 10.55 10.12 209.9
+# Timing stopped at: 12.31 10.22 211.8
+# Parallel = FALSE
+#   user   system  elapsed 
+# 1145.647  186.958 1365.547 
+
+# Datos_n10000.dat
+# Parallel = TRUE
+#  
+# 
+# Parallel = FALSE
+#    user   system  elapsed 
+# 1013.972  152.305 1166.241 
+
+getOR <- function(distObject)
+{	
+  distMatrix <- as.matrix(distObject)
+  vgR <- median(distMatrix^2)/2
+  I <- apply(distMatrix, 1,  IindexRobust, vg=vgR)
+  OR <- 1/I
+  return(OR)
+}
+
+getOR2 <- function(distMatrix)
+{	
+  vgR <- med(distMatrix^2)/2
+  I <- apply(distMatrix, 1,  IindexRobust2, vg=vgR)
+  OR <- 1/I
+  return(OR)
+}
+
+IindexRobust <- function(di, vg){
+# Depth RObust index of i in C: IRobust(i) = [1 + proxiRobust(i,C)/2VRobust(C)]^{-1}
+# Input:
+#      di: distances from individual i to the rest 
+#      vg: half geometric variability of C, estimated by means of medians
+# Output:
+#       index: IRobust(i)
+#--------------------------------------------------------------------
+  
+  # di <- di[di > 0]
+#   phi2 <- median(di)^2 - vg  #median(di^2) - vg  #median(di)^2 - vg  Estas dos cosas no tienen porque coincidir para n par!!!
+   I <- vg/median(di)^2
+   I <- as.numeric(I)
+
+   return(I)
+   
+ }
+
+IindexRobust2 <- function(di, vg){
+# Depth RObust index of i in C: IRobust(i) = [1 + proxiRobust(i,C)/2VRobust(C)]^{-1}
+# Input:
+#      di: distances from individual i to the rest 
+#      vg: half geometric variability of C, estimated by means of medians
+# Output:
+#       index: IRobust(i)
+#--------------------------------------------------------------------
+  
+  # di <- di[di > 0]
+#   phi2 <- median(di)^2 - vg  #median(di^2) - vg  #median(di)^2 - vg  Estas dos cosas no tienen porque coincidir para n par!!!
+   I <- vg/med(di)^2
+   I <- as.numeric(I)
+
+   return(I)
+   
+ }
+
+> str(globalquantilesDifferencesWeighted.null)
+ num [1:5000, 1:3, 1:100] 0.0163 0.0291 -0.0217 0.0674 0.0213 ...
+> format(object.size(globalquantilesDifferencesWeighted.null), unit="Mb")
+[1] "11.4 Mb"
+> system.time(getOR(dist(globalquantilesDifferencesWeighted.null[,,2])))
+   user  system elapsed 
+  2.329   0.176   2.505 
+> system.time(getOR2(rdist(globalquantilesDifferencesWeighted.null[,,2])))
+   user  system elapsed 
+  0.830   0.112   0.942 
+> system.time(distObject <- dist(globalquantilesDifferencesWeighted.null[,,2]))
+   user  system elapsed 
+   0.06    0.00    0.06 
+> system.time(distMatrix <- as.matrix(distObject))
+   user  system elapsed 
+  0.704   0.076   0.780 
+> format(object.size(distObject), unit="Mb")
+[1] "95.4 Mb"
+> format(object.size(distMatrix), unit="Mb")
+[1] "191.3 Mb"
+> system.time(vgR <- median(distMatrix^2)/2)
+   user  system elapsed 
+  0.495   0.032   0.527 
+> system.time(vgR <- med(distMatrix^2)/2)
+   user  system elapsed 
+  0.217   0.052   0.269 
+> system.time(vgR <- med(distObject^2)/2)
+   user  system elapsed 
+  0.076   0.000   0.077 
+> system.time(I <- apply(distMatrix, 1,  IindexRobust, vg=vgR))
+   user  system elapsed 
+   0.92    0.00    0.92 
+system.time(I <- apply(distMatrix, 1,  IindexRobust2, vg=vgR))
+   user  system elapsed 
+  0.613   0.000   0.615 
+> system.time(OR <- 1/I)
+   user  system elapsed 
+      0       0       0 
+> format(object.size(vgR), unit="Mb")
+[1] "0 Mb"
+> format(object.size(I), unit="Mb")
+[1] "0.3 Mb"
+> format(object.size(OR), unit="Mb")
+[1] "0.3 Mb"
+
+> str(globalquantilesDifferencesWeighted.null)
+ num [1:20000, 1:3, 1:20] 0.00755 -0.09974 -0.17559 -0.16039 -0.05802 ...
+> format(object.size(globalquantilesDifferencesWeighted.null), unit="Mb")
+[1] "9.2 Mb"
+> system.time(getOR(dist(globalquantilesDifferencesWeighted.null[,,2])))
+   user  system elapsed 
+ 38.681   7.516  53.368
+> system.time(getOR2(rdist(globalquantilesDifferencesWeighted.null[,,2])))
+   user  system elapsed 
+ 18.972   4.883  38.502 
+> system.time(distObject <- dist(globalquantilesDifferencesWeighted.null[,,2]))
+   user  system elapsed 
+  0.976   0.000   0.979 
+> system.time(distMatrix <- as.matrix(distObject))
+   user  system elapsed 
+ 13.056   3.259  17.300 
+> format(object.size(distObject), unit="Mb")
+[1] "1525.8 Mb"
+> format(object.size(distMatrix), unit="Mb")
+[1] "3054.2 Mb"
+> system.time(vgR <- median(distMatrix^2)/2)
+   user  system elapsed 
+  6.283   2.334  10.009 
+> system.time(vgR <- med(distMatrix^2)/2)
+   user  system elapsed 
+  4.853   1.150   6.038 
+> system.time(vgR <- med(distObject^2)/2)
+   user  system elapsed 
+  1.742   0.576   2.321 
+> system.time(I <- apply(distMatrix, 1,  IindexRobust, vg=vgR))
+   user  system elapsed 
+ 18.467   3.504  35.719 
+> system.time(I <- apply(distMatrix, 1,  IindexRobust2, vg=vgR))
+   user  system elapsed 
+ 12.595   1.074  13.682 
+> system.time(OR <- 1/I)
+   user  system elapsed 
+      0       0       0 
+> format(object.size(vgR), unit="Mb")
+[1] "0 Mb"
+> format(object.size(I), unit="Mb")
+[1] "1.4 Mb"
+> format(object.size(OR), unit="Mb")
+[1] "1.4 Mb"
+
+
+
+system.time(getOR2(rdist(globalquantilesDifferencesWeighted.null[,,2])))
+
 positiveCases <- positive
 negativeCases <- negative
 
