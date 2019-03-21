@@ -21,7 +21,8 @@ IindexRobust <- function(di, vg){
   
   # di <- di[di > 0]
 #   phi2 <- median(di)^2 - vg  #median(di^2) - vg  #median(di)^2 - vg  Estas dos cosas no tienen porque coincidir para n par!!!
-   I <- vg/median(di)^2
+  if (fast) {I <- vg/med(di)^2}
+  else {I <- vg/median(di)^2}
    I <- as.numeric(I)
 
    return(I)

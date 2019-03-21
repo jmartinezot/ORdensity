@@ -431,3 +431,53 @@ nonimportant <- out$summary[clustering4==4, "id"]
 table(example$DEgen[nonimportant])
 table(example$gap[nonimportant])
 
+
+data <- "/home/bee/Github/ItziarParallelizing/WeTransfer/Datos_n1000.dat"
+> fast <- FALSE
+> system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = FALSE, verbose = FALSE))
+   user  system elapsed 
+ 55.458   1.396  56.846 
+> system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = TRUE, verbose = FALSE))
+   user  system elapsed 
+ 46.983   1.873   8.260 
+> fast <- TRUE
+> system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = FALSE, verbose = FALSE))
+   user  system elapsed 
+ 50.104   0.016  50.114 
+> system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = TRUE, verbose = FALSE))
+   user  system elapsed 
+ 41.027   1.752   7.385 
+
+> data <- "/home/bee/Github/ItziarParallelizing/WeTransfer/Datos_n5000.dat"
+> fast <- FALSE
+> system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = FALSE, verbose = FALSE))
+   user  system elapsed 
+355.784  48.114 403.873 
+> system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = TRUE, verbose = FALSE))
+   user  system elapsed 
+561.378  54.787  95.848 
+> fast <- TRUE
+> system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = FALSE, verbose = FALSE))
+   user  system elapsed 
+222.379  19.400 241.791 
+> system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = TRUE, verbose = FALSE))
+   user  system elapsed 
+462.288  53.394  81.575 
+
+
+median_estimator <- function(previous_estimator, number_previous_cases, v)
+{
+current_estimator <- previous_estimator
+number_previous_cases <- number_previous_cases
+cumadev <- 0
+n <- length(v)
+for (i in 1:n)
+{
+number_previous_cases <- number_previous_cases + 1
+cumadev <- cumadev + abs(v[i] - current_estimator)
+eta = 1.5 * cumadev/(number_previous_cases * number_previous_cases)
+current_estimator <- current_estimator + eta * sign(v[i] - current_estimator)
+}
+return (current_estimator)
+}
+

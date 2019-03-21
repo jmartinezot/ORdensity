@@ -225,7 +225,8 @@ getBootstrapSample <- function(allCases, numPositiveCases)
 getOR <- function(distObject)
 {	
   distMatrix <- as.matrix(distObject)
-  vgR <- median(distMatrix^2)/2
+  if (fast) {vgR <- med(distMatrix^2)/2}
+  else {vgR <- median(distMatrix^2)/2}
   I <- apply(distMatrix, 1,  IindexRobust, vg=vgR)
   OR <- 1/I
   return(OR)
@@ -314,7 +315,9 @@ setMethod("compute.ORdensity",
 		    quantilesDifferencesWeighted.null[ , ,b] <- getQuantilesDifferencesWeighted(bootstrapSample$positives, bootstrapSample$negatives, scale, weights, probs)})
 		      if (verbose) {print('Time after a non-parallel bootstrap replication (step 2)'); print(w2)}
 		      w3 <- system.time({
-		       ORbootstrap[, b] <- getOR(dist(quantilesDifferencesWeighted.null[,,b]))})
+		        if (fast)
+		       {ORbootstrap[, b] <- getOR(rdist(quantilesDifferencesWeighted.null[,,b]))}
+		        else  {ORbootstrap[, b] <- getOR(dist(quantilesDifferencesWeighted.null[,,b]))} })
 		       # ORbootstrap[, b] <- getOR(dist.matrix(quantilesDifferencesWeighted.null[,,b], method="euclidean"))})
 		       # ORbootstrap[, b] <- getOR(euc_dist(quantilesDifferencesWeighted.null[,,b]))})
 		      if (verbose) {print('Time after a non-parallel bootstrap replication (step 3)'); print(w3)}
@@ -505,7 +508,6 @@ setMethod("findbestK",
             # len(object@char) could be less than 10
             for (k in 2:10)
             {
-              print(k)
               shit <<- object@char
               aux <- pam(dist(scale(object@char)), k)
               s[k] <- mean(silhouette(aux)[, "sil_width"])
