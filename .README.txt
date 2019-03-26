@@ -464,6 +464,34 @@ data <- "/home/bee/Github/ItziarParallelizing/WeTransfer/Datos_n1000.dat"
    user  system elapsed 
 462.288  53.394  81.575 
 
+> data <- "/home/bee/Github/ItziarParallelizing/WeTransfer/Datos_n20000.dat"
+> fast <- TRUE
+> cat("fast variable is set to:", fast, "\n")
+fast variable is set to: TRUE 
+> cat("Not parallel:\n")
+Not parallel:
+> system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = FALSE, verbose = FALSE))
+    user   system  elapsed 
+2133.147  344.748 2478.593 
+
+> data <- "/home/bee/Github/ItziarParallelizing/WeTransfer/Datos_n50000.dat"
+> fast <- TRUE
+> cat("fast variable is set to:", fast, "\n")
+fast variable is set to: TRUE 
+> cat("Not parallel:\n")
+Not parallel:
+> system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = FALSE, verbose = FALSE))
+Error: cannot allocate vector of size 18.6 Gb
+Timing stopped at: 0.206 0 0.206
+Timing stopped at: 7.065 0.008 7.071
+Timing stopped at: 7.171 0.032 7.202
+Timing stopped at: 21.23 1.642 22.87
+
+a <- read.csv(data, sep=" ", header=TRUE)
+x <- a[, 2:31]
+y <- a[, 32:61]
+positive <- as.matrix(x)
+negative <- as.matrix(y)
 
 median_estimator <- function(previous_estimator, number_previous_cases, v)
 {
@@ -481,3 +509,141 @@ current_estimator <- current_estimator + eta * sign(v[i] - current_estimator)
 return (current_estimator)
 }
 
+
+> set.seed(0)
+> ncases <- 50000
+> rvalues <- matrix(rnorm(ncases * 3), ncol = 3)
+> system.time({d1 <- dist(rvalues)})
+   user  system elapsed 
+  6.727   1.584   8.310 
+> system.time({d2 <- rdist(rvalues)})
+Error: cannot allocate vector of size 18.6 Gb
+Timing stopped at: 0.14 0 0.139
+> system.time({d3 <- distances(rvalues)})
+   user  system elapsed 
+  0.063   0.003   0.082 
+> format(object.size(d1), unit="Mb")
+[1] "9536.6 Mb"
+> format(object.size(d3), unit="Mb")
+[1] "1.1 Mb"
+> d3
+Error: cannot allocate vector of size 18.6 Gb
+In addition: Warning message:
+In print.distances(x) :
+  `x` contains too many data points, showing the first 20 out of the total 50000.
+
+> set.seed(0)
+> ncases <- 20000
+> rvalues <- matrix(rnorm(ncases * 3), ncol = 3)
+> system.time({d1 <- dist(rvalues)})
+   user  system elapsed 
+  1.036   0.293   1.330 
+> system.time({d2 <- rdist(rvalues)})
+   user  system elapsed 
+  2.636   0.506   3.142 
+> system.time({d3 <- distances(rvalues)})
+   user  system elapsed 
+      0       0       0 
+> format(object.size(d1), unit="Mb")
+[1] "1525.8 Mb"
+> format(object.size(d2), unit="Mb")
+[1] "3051.8 Mb"
+> format(object.size(d3), unit="Mb")
+[1] "0.5 Mb"
+
+median_of_medians_of_distances <- function(m)
+{
+   d <- distances(m)
+   med_columns <- rep(100,nrow(m))
+   for (i in 1:nrow(m)) 
+   {
+       med_columns[i] <- med(distance_columns(d,i))
+   }
+   return (med(med_columns))
+}
+
+system.time({median_of_medians_of_distances(rvalues)})
+
+set.seed(0)
+ncases <- 100000
+rvalues <- matrix(rnorm(ncases * 3), ncol = 3)
+system.time({median_of_medians_of_distances(rvalues)})
+    user   system  elapsed 
+1377.600    2.276 1380.010
+
+set.seed(0)
+ncases <- 50000
+rvalues <- matrix(rnorm(ncases * 3), ncol = 3)
+system.time({median_of_medians_of_distances(rvalues)})
+   user  system elapsed 
+307.930   0.524 308.424 
+
+set.seed(0)
+ncases <- 75000
+rvalues <- matrix(rnorm(ncases * 3), ncol = 3)
+system.time({median_of_medians_of_distances(rvalues)})
+   user  system elapsed 
+871.952   1.704 874.584
+
+all_distances <- function(m)
+{
+   n_cases <- nrow(m)
+   for (i in 1:(n_cases-1))
+   {
+      for (j in (i+1):n_cases)
+      {
+         d <- sum((m[i,] - m[j,])^2)
+      }
+   }
+}
+
+> set.seed(0)
+> ncases <- 50000
+> rvalues <- matrix(rnorm(ncases * 3), ncol = 3)
+> system.time(all_distances(rvalues))
+    user   system  elapsed 
+1113.337    0.096 1113.342 
+
+m <- matrix(c(72, 37, 28, 63), nrow = 2)
+
+accuracy <- function(m)
+{
+total <- sum(m)
+return(sum(diag(m)) / total)
+}
+
+kappa <- function(m)
+{
+acc <- accuracy(m)
+p_e <- 0
+for (j in 1:nrow(m))
+   {
+	p_e <- p_e + (sum(m[j,])/ sum(m)) * (sum(m[,j])/ sum(m))
+   }
+return((acc - p_e) / (1-p_e))
+}
+
+sensitivity <- function(m)
+{
+return(m[1,1]/(m[1,1] + m[2,1]))
+}
+
+specificity <- function(m)
+{
+return(m[2,2]/(m[2,2] + m[1,2]))
+}
+
+precision <- function(m)
+{
+return(m[1,1]/(m[1,1] + m[1,2]))
+}
+
+recall <- function(m)
+{
+return(sensitivity(m))
+}
+
+F <- function(m)
+{
+return ((2*precision(m)*recall(m))/ (recall(m) + precision(m)) )
+}

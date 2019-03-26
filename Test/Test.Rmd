@@ -34,7 +34,7 @@ library(Rfast)
 # Input / Output variables
 # Tuning parameters
 # ...
-data <- "/home/bee/Github/ItziarParallelizing/WeTransfer/Datos_n10000.dat"
+data <- "/home/bee/Github/ItziarParallelizing/WeTransfer/Datos_n50000.dat"
 
 ```
 
@@ -78,4 +78,32 @@ cat("Not parallel:\n")
 system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = FALSE, verbose = FALSE))
 cat("Parallel:\n")
 system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = TRUE, verbose = FALSE))
+```
+
+### Median of medians
+
+```{r}
+median_of_medians_of_distances <- function(v)
+{
+   d <- distances(v)
+   l <- apply(d, 1, med)
+   return (med(l))
+}
+```
+
+### Testing distances
+
+```{r}
+set.seed(0)
+ncases <- 100000
+rvalues <- matrix(rnorm(ncases * 3), ncol = 3)
+system.time({d1 <- dist(rvalues)})
+system.time({d2 <- rdist(rvalues)})
+system.time({d3 <- distances(rvalues)})
+format(object.size(d1), unit="Mb")
+format(object.size(d2), unit="Mb")
+format(object.size(d3), unit="Mb")
+med(d1)
+med(d2)
+median_of_medians_of_distances(rvalues)
 ```
