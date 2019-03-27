@@ -27,6 +27,7 @@ library(knitr)
 library(pryr)
 library(fields)
 library(Rfast)
+library(distances)
 ```
 
 
@@ -34,7 +35,7 @@ library(Rfast)
 # Input / Output variables
 # Tuning parameters
 # ...
-data <- "/home/bee/Github/ItziarParallelizing/WeTransfer/Datos_n50000.dat"
+data <- "/home/bee/Github/ItziarParallelizing/WeTransfer/Datos_n5000.dat"
 
 ```
 

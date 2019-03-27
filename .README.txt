@@ -647,3 +647,5 @@ F <- function(m)
 {
 return ((2*precision(m)*recall(m))/ (recall(m) + precision(m)) )
 }
+
+format(object.size(1.0) * 20000 * 20000, unit="auto")

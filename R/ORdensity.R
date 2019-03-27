@@ -248,6 +248,15 @@ setMethod("compute.ORdensity",
 	    positiveCases <- as.matrix(object@positive)
 		  negativeCases <- as.matrix(object@negative)
 		  numGenes <- dim(positiveCases)[1]
+		  
+		  cat("An object of size", format(object.size(1.0) * numGenes * numGenes, unit="auto"), 
+		      "is going to be created in memory. If the parallel option is enabled, as many objects 
+		      of that size as the number of processors in your computer, are going to be created at
+		      the same time. Please consider that when running this code. ")
+		  
+		  cat("An object of size", format(object.size(1.0) * numGenes * length(probs) * B, unit="auto"), 
+		      "is going to be created in memory. Please consider that when running this code. ")
+		  
 		  numPositiveCases <- dim(positiveCases)[2]
 		  numNegativeCases <- dim(negativeCases)[2]
 		  numCases <- numPositiveCases + numNegativeCases
