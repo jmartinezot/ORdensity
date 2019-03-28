@@ -25,9 +25,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(knitr)
 library(pryr)
-library(fields)
-library(Rfast)
-library(distances)
+# library(fields)
+# library(Rfast)
+# library(distances)
 ```
 
 
@@ -35,7 +35,7 @@ library(distances)
 # Input / Output variables
 # Tuning parameters
 # ...
-data <- "/home/bee/Github/ItziarParallelizing/WeTransfer/Datos_n5000.dat"
+data <- "/home/bee/Github/ItziarParallelizing/WeTransfer/Datos_n20000.dat"
 
 ```
 
@@ -58,6 +58,12 @@ x <- a[, 2:31]
 y <- a[, 32:61]
 positive <- as.matrix(x)
 negative <- as.matrix(y)
+```
+
+### Test with 20.000
+```{r}
+fast <- TRUE
+system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = FALSE, verbose = FALSE))
 ```
 
 ### Global fast variable

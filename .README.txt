@@ -597,6 +597,14 @@ all_distances <- function(m)
    }
 }
 
+
+set.seed(0)
+ncases <- 10000
+rvalues <- matrix(rnorm(ncases * 3), ncol = 3)
+
+
+
+
 > set.seed(0)
 > ncases <- 50000
 > rvalues <- matrix(rnorm(ncases * 3), ncol = 3)
@@ -649,3 +657,10 @@ return ((2*precision(m)*recall(m))/ (recall(m) + precision(m)) )
 }
 
 format(object.size(1.0) * 20000 * 20000, unit="auto")
+
+
+Error in apply(originalDataFPStatistics[, 1, ], 1, function(x) { : 
+  dim(X) must have a positive length
+NO Cargar paquetes al principio
+OK Estimación de tamaño
+
