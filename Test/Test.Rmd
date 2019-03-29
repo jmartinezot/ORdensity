@@ -24,10 +24,6 @@ knitr::opts_chunk$set(echo = TRUE)
 # ...
 
 library(knitr)
-library(pryr)
-# library(fields)
-# library(Rfast)
-# library(distances)
 ```
 
 
@@ -60,31 +56,18 @@ positive <- as.matrix(x)
 negative <- as.matrix(y)
 ```
 
-### Test with 20.000
+### Test with 1.000 (not parallel)
 ```{r}
-fast <- TRUE
 system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = FALSE, verbose = FALSE))
 ```
 
-### Global fast variable
+### Test with 1.000 (parallel)
 ```{r}
-fast <- FALSE
+system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = TRUE, verbose = FALSE))
 ```
-
-### Checking variants
+### Summary
 ```{r}
-fast <- FALSE
-cat("fast variable is set to:", fast, "\n")
-cat("Not parallel:\n")
-system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = FALSE, verbose = FALSE))
-cat("Parallel:\n")
-system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = TRUE, verbose = FALSE))
-fast <- TRUE
-cat("fast variable is set to:", fast, "\n")
-cat("Not parallel:\n")
-system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = FALSE, verbose = FALSE))
-cat("Parallel:\n")
-system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = TRUE, verbose = FALSE))
+summary(myORdensity)
 ```
 
 ### Median of medians
@@ -98,19 +81,3 @@ median_of_medians_of_distances <- function(v)
 }
 ```
 
-### Testing distances
-
-```{r}
-set.seed(0)
-ncases <- 100000
-rvalues <- matrix(rnorm(ncases * 3), ncol = 3)
-system.time({d1 <- dist(rvalues)})
-system.time({d2 <- rdist(rvalues)})
-system.time({d3 <- distances(rvalues)})
-format(object.size(d1), unit="Mb")
-format(object.size(d2), unit="Mb")
-format(object.size(d3), unit="Mb")
-med(d1)
-med(d2)
-median_of_medians_of_distances(rvalues)
-```

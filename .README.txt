@@ -551,6 +551,20 @@ In print.distances(x) :
 > format(object.size(d3), unit="Mb")
 [1] "0.5 Mb"
 
+set.seed(0)
+ncases <- 20000
+rvalues <- matrix(rnorm(ncases * 3), ncol = 3)
+system.time(Rfast::med(as.matrix(distances::distances(rvalues))))
+   user  system elapsed 
+ 16.276   4.073  20.384  
+system.time(Rfast::med(distances::distances(rvalues)[1:20000, 1:20000]))
+   user  system elapsed 
+  4.867   1.147   6.015 
+system.time({d <- distances::distances(rvalues)
+Rfast::med(d[1:(dim(d)[2]), 1:(dim(d)[2])])})
+   user  system elapsed 
+  4.861   1.132   5.994  
+
 median_of_medians_of_distances <- function(m)
 {
    d <- distances(m)

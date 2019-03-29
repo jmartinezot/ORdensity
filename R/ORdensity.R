@@ -47,7 +47,8 @@ ORdensity <- setClass(
 setMethod("summary",
           signature = "ORdensity",
           definition = function(object){
-              clustering <- cluster::pam(distances::distances(scale(object@char)), object@bestK)$clustering
+              d <- distances::distances(scale(object@char))
+              clustering <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], object@bestK)$clustering
               result_prov <- list()
               meanOR <- list()
               for (k in 1:object@bestK)
@@ -143,7 +144,8 @@ setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
 setMethod("plotFPvsOR",
   signature = "ORdensity",
   definition = function(object, k = object@bestK){
-    clustering <- cluster::pam(distances::distances(scale(object@char)), k)$clustering
+    d <- distances::distances(scale(object@char))
+    clustering <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k)$clustering
     legend_text <- sprintf("cluster %s",seq(1:k))
     plot(object@FP, object@OR, type="n",main="Potential genes",xlab="FP",ylab="OR")
     points(object@FP, object@OR, cex=1/(0.5+object@dFP),  col = clustering)
@@ -166,7 +168,8 @@ setMethod("silhouetteAnalysis",
     s <- rep(NA, 10)
     for (k in 2:10)
     {
-      aux <- cluster::pam(distances::distances(scale(object@char)), k)
+      d <- distances::distances(scale(object@char))
+      aux <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k)
       s[k] <- mean(cluster::silhouette(aux)[, "sil_width"])
     }
     plot(s, type="b", ylim=c(0,1), main="Clustering goodness", xlab = "K value", ylab = "silhouette")
@@ -185,7 +188,8 @@ setGeneric("clusplotk", function(object, ...) standardGeneric("clusplotk"))
 setMethod("clusplotk",
   signature = "ORdensity",
   definition = function(object, k = object@bestK){
-    aa <- cluster::pam(distances::distances(scale(object@char)), k)
+    d <- distances::distances(scale(object@char))
+    aa <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k)
     clusplot(aa, main = paste("Clustering with k = ", k))
   }
   )
@@ -218,9 +222,8 @@ getBootstrapSample <- function(allCases, numPositiveCases)
   return(list("positives"=aux1, "negatives"=aux2))
 }
 
-getOR <- function(distObject)
+getOR <- function(distMatrix)
 {	
-  distMatrix <- as.matrix(distObject)
   vgR <- Rfast::med(distMatrix^2)/2
   I <- apply(distMatrix, 1,  IindexRobust, vg=vgR)
   OR <- 1/I
@@ -268,7 +271,10 @@ setMethod("compute.ORdensity",
 
 		  if (verbose) {print('Time after second chunk'); print(b)}
 
-		  c <- system.time ({Dxy <- distances::distances(quantilesDifferencesWeighted)})
+		  c <- system.time ({
+		    d <- distances::distances(quantilesDifferencesWeighted)
+		    Dxy <- d[1:(dim(d)[2]), 1:(dim(d)[2])]
+		    })
 
 		  if (verbose) {print('Time after third chunk'); print(c)}
 
@@ -293,7 +299,8 @@ setMethod("compute.ORdensity",
         bootstrapSample <- getBootstrapSample(allCases, numPositiveCases)
   			res_one <- list()
   			res_one[[1]] <- getQuantilesDifferencesWeighted(bootstrapSample$positives, bootstrapSample$negatives, scale, weights, probs)
-  			res_one[[2]] <- getOR(distances::distances(res_one[[1]]))
+  			d <- distances::distances(res_one[[1]])
+  			res_one[[2]] <- getOR(d[1:(dim(d)[2]), 1:(dim(d)[2])])
   			res_one
 		  }
       parallel::stopCluster(cl)
@@ -318,7 +325,8 @@ setMethod("compute.ORdensity",
 		    quantilesDifferencesWeighted.null[ , ,b] <- getQuantilesDifferencesWeighted(bootstrapSample$positives, bootstrapSample$negatives, scale, weights, probs)})
 		      if (verbose) {print('Time after a non-parallel bootstrap replication (step 2)'); print(w2)}
 		      w3 <- system.time({
-		       ORbootstrap[, b] <- getOR(distances::distances(quantilesDifferencesWeighted.null[,,b]))
+		        d <- distances::distances(quantilesDifferencesWeighted.null[,,b])
+		       ORbootstrap[, b] <- getOR(d[1:(dim(d)[2]), 1:(dim(d)[2])])
 		      if (verbose) {print('Time after a non-parallel bootstrap replication (step 3)'); print(w3)}
 		    })
 		    })
@@ -382,8 +390,8 @@ setMethod("compute.ORdensity",
 		      # after joining the original data with the bootstrap, we need the labels to find which is which
 		      label <- c(rep(1, numSuspicious), rep(0, numInCurrentFold))
 
-		      Dmix <- distances::distances(quantilesOriginalPlusBootstrapFold)
-		      Dmix <- as.matrix(Dmix)
+		      d <- distances::distances(quantilesOriginalPlusBootstrapFold)
+		      Dmix <- d[1:(dim(d)[2]), 1:(dim(d)[2])]
 		      originalDataFPStatisticsByFold <- matrix(0, nrow=numSuspicious, ncol=3)
 		      colnames(originalDataFPStatisticsByFold) <- c( "FPneighbourghood", "densityFP", "radius")
 
@@ -492,7 +500,6 @@ setMethod("initialize", "ORdensity", function(.Object, Exp_cond_1, Exp_cond_2, l
   .Object@FP <- .Object@out$summary[, "FP"]
   .Object@dFP <- .Object@out$summary[, "dFP"]
   .Object@char <- data.frame(.Object@OR, .Object@FP, .Object@dFP)
-  require(cluster)
   .Object@bestK <- findbestK(.Object)
   .Object
 })
@@ -514,7 +521,8 @@ setMethod("findbestK",
             for (k in 2:10)
             {
               shit <<- object@char
-              aux <- cluster::pam(distances::distances(scale(object@char)), k)
+              d <- distances::distances(scale(object@char))
+              aux <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k)
               s[k] <- mean(cluster::silhouette(aux)[, "sil_width"])
             }
             best_k <- which(s == max(s, na.rm = TRUE))
@@ -539,7 +547,8 @@ setMethod("findDEgenes",
             {
               KForClustering <- numclusters
             }
-            clustering <- cluster::pam(distances::distances(scale(object@char)), KForClustering)$clustering
+            d <- distances::distances(scale(object@char))
+            clustering <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], KForClustering)$clustering
             result_prov <- list()
             meanOR <- list()
             for (k in 1:KForClustering)
