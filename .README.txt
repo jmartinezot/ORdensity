@@ -678,3 +678,33 @@ Error in apply(originalDataFPStatistics[, 1, ], 1, function(x) { :
 NO Cargar paquetes al principio
 OK Estimación de tamaño
 
+20000
+> system.time(myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = FALSE, verbose = FALSE))
+An object of size 3 Gb is going to be created in memory. If the parallel option is enabled, as many objects of that size as the number of processors in your computer, are going to be created at the same time. Please consider that when running this code.
+A bootstrap replication takes 31.051 seconds, and you have requested 100 bootstrap replications.
+    user   system  elapsed 
+4707.693  246.898 5209.893 
+
+n_genes <- 5
+n_cases <- 5
+positiveCases <- matrix(rnorm(n_genes * n_cases), ncol=n_cases)
+negativeCases <- matrix(rnorm(n_genes * n_cases), ncol=n_cases)
+
+n_objects <- 5
+n_features <- 3
+objects <- matrix(rnorm(n_objects * n_features), ncol=n_features)
+d1 <- distances::distances(objects)
+d2 <- fields::rdist(objects)
+d3 <- dist(objects)
+getOR(d1)
+getOR(d1[1:(dim(d1)[2]), 1:(dim(d1)[2])])
+getOR(d2)
+getOR(as.matrix(d3))
+
+
+> myORdensity10000 <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2, B = 10000)
+An object of size 7.6 Mb is going to be created in memory. If the parallel option is enabled, as many objects of that size as the number of processors in your computer, are going to be created at the same time. Please consider that when running this code.
+A bootstrap replication takes 0.318 seconds, and you have requested 10000 bootstrap replications.
+Warning message:
+In eval(formal.args[[as.character(substitute(arg))]], envir = sys.frame(sysP)) :
+  restarting interrupted promise evaluation
