@@ -8,17 +8,18 @@
 preclusteredData(object, ...)
 }
 \arguments{
-\item{object}{Object of type ORdensity}
+\item{object}{Object of class ORdensity}
 }
 \value{
-The data before doing any clustering
+\code{\link{data.frame}} with all potential DE genes
 }
 \description{
-This function returns the data after applying the ORdensity procedure, but before doing any clustering
+This function returns offers the description of all the identified 
+potential DE genes in terms of variables OR, FP, and dFP in one only table.
 }
 \examples{
-randomA <- matrix(rnorm(30*100), nrow = 100)
-randomB <- matrix(rnorm(30*100), nrow = 100)
+randomA <- matrix(rnorm(30*1000), nrow = 1000)
+randomB <- matrix(rnorm(30*1000), nrow = 1000)
 myORdensity <- new("ORdensity", Exp_cond_1 = randomA, Exp_cond_2 = randomB, parallel = TRUE)
 preclusteredData(myORdensity)
 }
