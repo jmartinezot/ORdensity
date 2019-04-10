@@ -78,7 +78,8 @@ setMethod("summary",
             {
               KForClustering <- numclusters
             }
-            clustering <- cluster::pam(dist(scale(object@char)), KForClustering)$clustering
+	    d <- distances::distances(scale(object@char))
+            clustering <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], KForClustering, diss = TRUE)$clustering
             result_prov <- list()
             # meanOR <- list()
             # for (k in 1:KForClustering)
@@ -197,7 +198,7 @@ setMethod("plotFPvsOR",
   signature = "ORdensity",
   definition = function(object, k = object@bestK){
     d <- distances::distances(scale(object@char))
-    clustering <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k)$clustering
+    clustering <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k, diss = TRUE)$clustering
     legend_text <- sprintf("cluster %s",seq(1:k))
     plot(object@FP, object@OR, type="n",main="Potential genes",xlab="FP",ylab="OR")
     points(object@FP, object@OR, cex=1/(0.5+object@dFP),  col = clustering)
@@ -221,7 +222,7 @@ setMethod("silhouetteAnalysis",
     for (k in 2:10)
     {
       d <- distances::distances(scale(object@char))
-      aux <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k)
+      aux <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k, diss = TRUE)
       s[k] <- mean(cluster::silhouette(aux)[, "sil_width"])
     }
     plot(s, type="b", ylim=c(0,1), main="Clustering goodness", xlab = "K value", ylab = "silhouette")
@@ -241,7 +242,7 @@ setMethod("clusplotk",
   signature = "ORdensity",
   definition = function(object, k = object@bestK){
     d <- distances::distances(scale(object@char))
-    aa <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k)
+    aa <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k, diss = TRUE)
     clusplot(aa, main = paste("Clustering with k = ", k))
   }
   )
@@ -574,7 +575,7 @@ setMethod("findbestK",
             {
               shit <<- object@char
               d <- distances::distances(scale(object@char))
-              aux <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k)
+              aux <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k, diss = TRUE)
               s[k] <- mean(cluster::silhouette(aux)[, "sil_width"])
             }
             best_k <- which(s == max(s, na.rm = TRUE))
@@ -637,7 +638,8 @@ setMethod("findDEgenes",
             preclustered_data$radius <- NULL
             preclustered_data$Strong <- ifelse(preclustered_data$FP == 0, "S", "-")
             preclustered_data$Relaxed <- ifelse(preclustered_data$FP < p0 * neighbours, "R", "-")
-            clustering <- cluster::pam(dist(scale(object@char)), KForClustering)$clustering
+	    d <- distances::distances(scale(object@char))
+            clustering <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], KForClustering, diss = TRUE)$clustering
             result_prov <- list()
             meanOR <- list()
             for (k in 1:KForClustering)

@@ -43,6 +43,19 @@ remove.packages('ORdensity')
 install.packages("/home/bee/Github/ORdensity", repos = NULL, type = "source")
 library('ORdensity')
 
+remove.packages('ORdensity')
+install.packages("/home/bee/Downloads/ORdensityITZIAR.tar.gz", repos = NULL, type = "source")
+library('ORdensity')
+
+remove.packages('ORdensity')
+install.packages("/home/bee/Github/ORdensityOTZETA.tar.gz", repos = NULL, type = "source")
+library('ORdensity')
+
+save(myORdensityOTZETA, file = "/home/bee/Downloads/OROTZETA.RData")
+save(myORdensityITZIAR, file = "/home/bee/Downloads/ORITZIAR.RData")
+load("/home/bee/Downloads/OROTZETA.RData")
+load("/home/bee/Downloads/ORITZIAR.RData")
+
 remove all variables in environment
 
 rm(list=ls())
