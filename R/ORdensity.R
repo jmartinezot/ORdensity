@@ -191,7 +191,6 @@ setMethod("plot",
   signature = "ORdensity",
   definition = function(x, y = object@bestK, k = object@bestK, ...){
     object <- x
-    if (y != object@bestK) {k = y}
     d <- distances::distances(scale(object@char))
     clustering <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k, diss = TRUE)$clustering
     legend_text <- sprintf("cluster %s",seq(1:k))
