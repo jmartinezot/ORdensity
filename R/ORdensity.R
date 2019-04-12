@@ -10,13 +10,12 @@
 #'
 #' @author Itziar Irigoien, Concepcion Arenas, Jose Maria Martinez-Otzeta
 #'
-#' @export plotFPvsOR
 #' @export silhouetteAnalysis
-#' @export clusplotk
 #' @export compute.ORdensity
 #' @export findDEgenes
 #' @export summary
 #' @export preclusteredData
+#' 
 
 ORdensity <- setClass(
 	"ORdensity",
@@ -37,52 +36,105 @@ ORdensity <- setClass(
 # setGeneric("summary.ORdensity", function(object, ...) standardGeneric("summary.ORdensity"))
 
 #' @title summary
-#' @param 
-#' @return 
+#' @description This function clusters the potential differentially expressed (DE) genes among them 
+#' so that the real DE genes can be distinguish from the not DE genes.
+#' @param object An object of `findDEgenes' class
+#' @param numclusters By default \code{NULL}, it inherits from the \code{object}. Optionally,
+#' an integer number indicating number of clusters.
+#' @details Once the potential DE genes are identified, the real DE genes and the not real DE genes or
+#' false positives must be distinguished. Since the real DE genes must have high OR values along with
+#' low FP and dFP values, and on the contrary, the false DE genes must have low OR values but high FP and dFP values,
+#' a clustering of all the potential DE genes is carried out. The clustering is based on build-on variables OR, FP and dFP 
+#' (see class \code{ORdensity}) which are scaled. The clustering algorithm is   \code{\link{pam}} and by default
+#' the number of clusters in the partition is obtained by \code{\link{silhouette}}. With parameter \code{numclusters} the number
+#' of clusters in the partition can be customized.
+#' @return  A list with \eqn{k} lists where \eqn{k} is the best number of clusters found. 
+#' The clusters are ordered based on their importance according to the mean OR values of the clusters 
+#' (greater is the mean OR value of the cluster more important are the genes in the cluster).
+#' The first one is the most important, the last one the less important. Each list has elements:
+#' \itemize{
+#' \item \code{numberOfGenes}: Number of genes in the cluster.
+#' \item \code{CharacteristicsCluster}: Matrix with mean values and standard deviation of variables OR, FP and dFP for each cluster.
+#' \item \code{Genes}: Identification of the genes in the cluster.
+#' }
 #' @examples
-#' 
-#' @rdname summary
+#' # Read data from 2 experimental conditions
+#' x <- example[, 3:32]
+#' y <- example[, 33:62]
+#' EXC.1 <- as.matrix(x)
+#' EXC.2 <- as.matrix(y)
+#' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
+#' out <- summary(myORdensity)
+#' out
+
+#' @rdname summary.ORdensity
 #' @export
 setMethod("summary",
           signature = "ORdensity",
-          definition = function(object){
-              clustering <- pam(dist(scale(object@char)), object@bestK)$clustering
-              result_prov <- list()
-              meanOR <- list()
-              for (k in 1:object@bestK)
-              {
-                result_prov[[k]] <- object@out$summary[clustering==k,]
-                result_prov[[k]] <- result_prov[[k]][,!colnames(result_prov[[k]]) %in% c("DifExp",  "minFP", "maxFP", "radius")]
-                meanOR[[k]] <- mean(result_prov[[k]][,'OR'])
-              }
-              clusters_ordering <- order(as.numeric(meanOR), decreasing = TRUE)
-              clusters <- list()
-              for (k in 1:object@bestK)
-              {
-                clusters[[k]] <- result_prov[[clusters_ordering[k]]]
-              }
-              # cat("The ORdensity method has found that the optimal clustering of the data consists of",object@bestK,"clusters\n")
-              prop <- object@out$prop
-              neighbours <- prop[3]
-              p0 <- prop[2]
-              cat("This is the proposed clustering made by the ORdensity method\n")
-              cat("For the computation of FP and dFP a total of", neighbours, "neighbours have been taken into account\n")
-              cat("The expected number of false positives neighbours is", p0*neighbours, "\n")
-              cat("The ORdensity method has found that the optimal clustering of the data consists of",object@bestK,"clusters\n\n")
-              return(list("neighbours"=neighbours, "expectedFalsePositiveNeighbours"=p0*neighbours, "clusters"=clusters))
-        }
+          definition = function(object, numclusters=NULL){
+            KForClustering <- object@bestK
+            if (!is.null(numclusters))
+            {
+              KForClustering <- numclusters
+            }
+	    d <- distances::distances(scale(object@char))
+            clustering <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], KForClustering, diss = TRUE)$clustering
+            result_prov <- list()
+            meanOR <- rep(NA, KForClustering)
+            CharClus <- list()
+            aux <- matrix(NA, nrow=2, ncol=3, dimnames=list(c("mean", "sd"), c("OR", "FP", "dFP")))
+            for (k in 1:KForClustering)
+            {
+              result_prov[[k]] <- object@out$summary[clustering==k,]
+              aux[1, 1] <- mean(result_prov[[k]][,'OR'])
+              aux[2, 1] <- sd(result_prov[[k]][,'OR'])
+              aux[1, 2] <- mean(result_prov[[k]][,'FP'])
+              aux[2, 2] <- sd(result_prov[[k]][,'FP'])
+              aux[1, 3] <- mean(result_prov[[k]][,'dFP'])
+              aux[2, 3] <- sd(result_prov[[k]][,'dFP'])
+              CharClus[[k]] <- aux
+              meanOR[k] <- aux[1, 1]
+            }
+            
+            clusters_ordering <- order(as.numeric(meanOR), decreasing = TRUE)
+            clusters <- list()
+            for (k in 1:KForClustering)
+            {
+              clusters[[k]] <- result_prov[[clusters_ordering[k]]]
+            }
+            DFgenes <- list()
+            for (k in 1:KForClustering)
+            {
+              DFgenes[[k]] <- list( "numberOfGenes"=length(clusters[[k]][,'id']), 
+                                    "CharacteristicsCluster"=CharClus[[k]], "genes"=sort(clusters[[k]][,'id']))
+            }
+            cat("The ORdensity method has found that the optimal clustering of the data consists of",object@bestK,"clusters\n")
+            if (!is.null(numclusters))
+            {
+              cat("The user has chosen a clustering of",numclusters,"clusters\n")
+            }
+            names(DFgenes) <- paste("Cluster", 1:KForClustering, sep="")
+            return(DFgenes)
+          }
 )
 
 #' preclusteredData
 #' 
-#' This function returns the data after applying the ORdensity procedure, but before doing any clustering
+#' This function returns the description of all the identified 
+#' potential DE genes in terms of variables OR, FP, and dFP in one only table so that 
+#' the interesed user can perform its own clustering analysis.
 #' 
-#' @param object Object of type ORdensity
-#' @return The data before doing any clustering
+#' @param object Object of class \code{\link{ORdensity}}
+#' @return \code{\link{data.frame}} with all potential DE genes
+#' 
 #' @examples
-#' randomA <- matrix(rnorm(30*100), nrow = 100)
-#' randomB <- matrix(rnorm(30*100), nrow = 100)
-#' myORdensity <- new("ORdensity", Exp_cond_1 = randomA, Exp_cond_2 = randomB, parallel = TRUE)
+#' # Read data from 2 experimental conditions
+#' x <- example[, 3:32]
+#' y <- example[, 33:62]
+#' EXC.1 <- as.matrix(x)
+#' EXC.2 <- as.matrix(y)
+#' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
+#' # data.frame with all potential DE genes:
 #' preclusteredData(myORdensity)
 #' @rdname preclusteredData
 #' @docType methods
@@ -100,11 +152,11 @@ setMethod("preclusteredData",
               preclustered_data$minFP <- NULL
               preclustered_data$maxFP <- NULL
               preclustered_data$radius <- NULL
-              preclustered_data$Strong <- ifelse(preclustered_data$FP == 0, "S", "")
-              preclustered_data$Flexible <- ifelse(preclustered_data$FP < p0 * neighbours, "F", "")
+              preclustered_data$Strong <- ifelse(preclustered_data$FP == 0, "S", "-")
+              preclustered_data$Relaxed <- ifelse(preclustered_data$FP < p0 * neighbours, "R", "-")
               if (verbose) {
-                cat("Columns \"Strong\" and \"Flexible\" show the genes identified as DE genes\n")
-                cat("They denote the strong selection (FP=0) with S and the flexible selection (FP < expectedFalsePositives) with F\n")
+                cat("Columns \"Strong\" and \"Relaxed\" show the genes identified as DE genes\n")
+                cat("They denote the strong selection (FP=0) with S and the relaxed selection (FP < expectedFalsePositives) with F\n")
               }
               preclustered_data
           }
@@ -122,27 +174,25 @@ setMethod("show",
            definition = function(object) {
              preClustering <- preclusteredData(object, verbose=FALSE)
              numGenes <- nrow(preClustering)
-             cat("The ORdensity method has detected", numGenes, "suspicious genes\n", sep = " ")
-             cat("The data before clustering is: \n")
-             cat("Columns \"Strong\" and \"Flexible\" show the genes identified as DE genes\n")
-             cat("They denote the strong selection (FP=0) with S and the flexible selection (FP < expectedFalsePositives) with F\n")
-             print(preClustering)
+             cat("The ORdensity method has detected", numGenes, "potential DE genes\n", sep = " ")
            }
 )
 
-#' @title plotFPvsOR
+#' @title plot
 #' @param 
 #' @return 
 #' @examples
 #' 
-#' @rdname plotFPvsOR
+#' @rdname plot
 #' @export
-setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
+#setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
 
-setMethod("plotFPvsOR",
+setMethod("plot",
   signature = "ORdensity",
-  definition = function(object, k = object@bestK){
-    clustering <- pam(dist(scale(object@char)), k)$clustering
+  definition = function(x, y = object@bestK, k = object@bestK, ...){
+    object <- x
+    d <- distances::distances(scale(object@char))
+    clustering <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k, diss = TRUE)$clustering
     legend_text <- sprintf("cluster %s",seq(1:k))
     plot(object@FP, object@OR, type="n",main="Potential genes",xlab="FP",ylab="OR")
     points(object@FP, object@OR, cex=1/(0.5+object@dFP),  col = clustering)
@@ -150,28 +200,51 @@ setMethod("plotFPvsOR",
     }
   )
 
-#' @title silhouetteAnalysis
-#' @param 
-#' @return 
+#' @title Silhouette Analysis 
+#' @description This function plots the \code{\link{silhouette}} values of successive clusterings. 
+#' @param object An object of \code{\link{ORdensity}} class
+#' @param K Integer value to indicate the maximum number of partitions to check 
+#' along the successive clusterings. By default \code{K=10}.
+#' @details Once the potential DE genes are identified, the real DE genes and the not real DE genes or
+#' false positives must be distinguished and it is carried out clustering  all the potential DE genes  
+#' (see \code{\link{findDEgenes}}). The clustering algorithm is   \code{\link{pam}} and by default
+#' the number of clusters in the partition is obtained by \code{\link{silhouette}}. 
+#' Nevertheless, \code{silhouetteAnalysis} allows to check whether there is a clear best number for the partition
+#' or the  average silhouettes values are
+#' rather similar. 
+#' #' @references Rousseeuw, P. J. (1987). Silhouettes: a graphical aid to the interpretation and validation of cluster analysis. Journal of computational and applied mathematics, 20, 53-65.
+#' @return  Displays a plot of the average silhouette width along with the number of clusters in the partition. 
+#' If assigned to an object, it returns a vector of length \code{K} with the average
+#' silhouette values.
 #' @examples
-#' 
+#' # Read data from 2 experimental conditions
+#' x <- example[, 3:32]
+#' y <- example[, 33:62]
+#' EXC.1 <- as.matrix(x)
+#' EXC.2 <- as.matrix(y)
+#' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
+#' silhouetteAnalysis(myORdensity)
 #' @rdname silhouetteAnalysis
 #' @export
 setGeneric("silhouetteAnalysis", function(object, ...) standardGeneric("silhouetteAnalysis"))
 
 setMethod("silhouetteAnalysis",
-  signature = "ORdensity",
-  definition = function(object){
-    library(cluster)
-    s <- rep(NA, 10)
-    for (k in 2:10)
-    {
-      aux <- pam(dist(scale(object@char)), k)
-      s[k] <- mean(silhouette(aux)[, "sil_width"])
-    }
-    plot(s, type="b", ylim=c(0,1), main="Clustering goodness", xlab = "K value", ylab = "silhouette")
-  }
-  )
+          signature = "ORdensity",
+          definition = function(object, K=10)
+          {
+            library(cluster)
+            s <- rep(NA, K)
+            for (k in 2:K)
+            {
+	      d <- distances::distances(scale(object@char))
+	      aux <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k, diss = TRUE)
+              s[k] <- mean(silhouette(aux)[, "sil_width"])
+            }
+            plot(s, type="b", ylim=c(0,1), main="Clustering goodness", xlab = "Number of clusters in partition", ylab = "silhouette")
+            invisible(s)
+          }
+)
+
 
 #' @title clusplotk
 #' @param 
@@ -185,7 +258,8 @@ setGeneric("clusplotk", function(object, ...) standardGeneric("clusplotk"))
 setMethod("clusplotk",
   signature = "ORdensity",
   definition = function(object, k = object@bestK){
-    aa <- pam(dist(scale(object@char)), k)
+    d <- distances::distances(scale(object@char))
+    aa <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k, diss = TRUE)
     clusplot(aa, main = paste("Clustering with k = ", k))
   }
   )
@@ -218,10 +292,9 @@ getBootstrapSample <- function(allCases, numPositiveCases)
   return(list("positives"=aux1, "negatives"=aux2))
 }
 
-getOR <- function(distObject)
+getOR <- function(distMatrix)
 {	
-  distMatrix <- as.matrix(distObject)
-  vgR <- median(distMatrix^2)/2
+  vgR <- Rfast::med(distMatrix^2)/2
   I <- apply(distMatrix, 1,  IindexRobust, vg=vgR)
   OR <- 1/I
   return(OR)
@@ -238,17 +311,25 @@ setGeneric("compute.ORdensity", function(object, ...) standardGeneric("compute.O
 
 setMethod("compute.ORdensity",
 	signature = "ORdensity",
-	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), probs=c(0.25, 0.5, 0.75), weights=c(1/4,1/2,1/4), K = 10, verbose=FALSE, parallel = FALSE, replicable = TRUE, seed = 0) {
+	definition =  function(object, B=100, scale=FALSE, alpha=0.05, fold=floor(B/10), probs=c(0.25, 0.5, 0.75), weights=c(1/4,1/2,1/4), K = 10, verbose=FALSE, 
+	                       parallel = FALSE, replicable = TRUE, seed = 0) {
 	    a <- system.time ({
+	    bootstrap_time_estimated <- FALSE
+	      
 	    positiveCases <- as.matrix(object@positive)
 		  negativeCases <- as.matrix(object@negative)
 		  numGenes <- dim(positiveCases)[1]
+		  
+		  cat("An object of size", format(object.size(1.0) * numGenes * numGenes / 7, unit="auto"), "is going to be created in memory. ")
+		  cat("If the parallel option is enabled, as many objects of that size as the number of processors in your computer, ")
+		  cat("are going to be created at the same time. Please consider that when running this code.\n")
+		  
 		  numPositiveCases <- dim(positiveCases)[2]
 		  numNegativeCases <- dim(negativeCases)[2]
 		  numCases <- numPositiveCases + numNegativeCases
 		  numProbs <- length(probs)
 		  numFolds <- fold})
-
+	    
 		  if (verbose) {print('Time after first chunk'); print(a)}
 
 		  b <- system.time ({
@@ -257,7 +338,10 @@ setMethod("compute.ORdensity",
 
 		  if (verbose) {print('Time after second chunk'); print(b)}
 
-		  c <- system.time ({Dxy <- dist(quantilesDifferencesWeighted)})
+		  c <- system.time ({
+		    d <- distances::distances(quantilesDifferencesWeighted)
+		    Dxy <- d[1:(dim(d)[2]), 1:(dim(d)[2])]
+		    })
 
 		  if (verbose) {print('Time after third chunk'); print(c)}
 
@@ -273,16 +357,15 @@ setMethod("compute.ORdensity",
 		      require(doRNG)
 		      set.seed(seed)
 		    }
-
-		  # require(bigstatsr)
 	    nproc <- parallel::detectCores()
-		  cl <- parallel::makeCluster(nproc)
+		  cl <- parallel::makeForkCluster(nproc)
 		  doParallel::registerDoParallel(cl)
       res_par <- foreach(b = 1:B, .combine = 'c', .options.RNG=seed) %dorng% {
         bootstrapSample <- getBootstrapSample(allCases, numPositiveCases)
   			res_one <- list()
   			res_one[[1]] <- getQuantilesDifferencesWeighted(bootstrapSample$positives, bootstrapSample$negatives, scale, weights, probs)
-  			res_one[[2]] <- getOR(dist(res_one[[1]]))
+  			d <- distances::distances(res_one[[1]])
+  			res_one[[2]] <- getOR(d[1:(dim(d)[2]), 1:(dim(d)[2])])
   			res_one
 		  }
       parallel::stopCluster(cl)
@@ -299,13 +382,29 @@ setMethod("compute.ORdensity",
 		  }
 		  for (b in 1:B)
 		  {
-		    bootstrapSample <- getBootstrapSample(allCases, numPositiveCases)
-		    quantilesDifferencesWeighted.null[ , ,b] <- getQuantilesDifferencesWeighted(bootstrapSample$positives, bootstrapSample$negatives, scale, weights, probs)
-		    ORbootstrap[, b] <- getOR(dist(quantilesDifferencesWeighted.null[,,b]))
+		    w <- system.time({
+		      w1 <- system.time({
+		    bootstrapSample <- getBootstrapSample(allCases, numPositiveCases)})
+		      if (verbose) {print('Time after a non-parallel bootstrap replication (step 1)'); print(w1)}
+		      w2 <- system.time({
+		    quantilesDifferencesWeighted.null[ , ,b] <- getQuantilesDifferencesWeighted(bootstrapSample$positives, bootstrapSample$negatives, scale, weights, probs)})
+		      if (verbose) {print('Time after a non-parallel bootstrap replication (step 2)'); print(w2)}
+		      w3 <- system.time({
+		        d <- distances::distances(quantilesDifferencesWeighted.null[,,b])
+		       ORbootstrap[, b] <- getOR(d[1:(dim(d)[2]), 1:(dim(d)[2])])
+		      if (verbose) {print('Time after a non-parallel bootstrap replication (step 3)'); print(w3)}
+		    })
+		    })
+		    if (!bootstrap_time_estimated)
+		    {
+		      bootstrap_time_estimated <- TRUE
+		      bootstrap_time <- w['elapsed']
+		      cat("A bootstrap replication takes", bootstrap_time, "seconds, and you have requested", B, "bootstrap replications.\n")
+		    }
+		    if (verbose) {print('Time after a non-parallel bootstrap replication'); print(w)}
 		  }
 		}
-		  })
-
+   })
 		  if (verbose) {print('Time after fourth chunk'); print(d)}
 
 		# OR values for original data
@@ -324,7 +423,6 @@ setMethod("compute.ORdensity",
 		  
 		  numORbootstrapBeyondCutPoint <- dim(indicesBiDimORbootstrapBeyondCutPoint)[1]
 		  
-		#
 		  # vector of integers (assigned fold) of size numGenes * B * alpha
 		  assignFoldToBootstrapBeyondCutPoint <- sample(1:numFolds, numORbootstrapBeyondCutPoint, replace=TRUE) #
 		  
@@ -334,6 +432,8 @@ setMethod("compute.ORdensity",
 
 		  if (verbose) {print('Time after fifth chunk'); print(e)}
 
+		  globalquantilesDifferencesWeighted.null <<- quantilesDifferencesWeighted.null
+		  
 		  f <- system.time ({
 		  for (j in 1:numFolds)
 		  {
@@ -354,8 +454,8 @@ setMethod("compute.ORdensity",
 		      # after joining the original data with the bootstrap, we need the labels to find which is which
 		      label <- c(rep(1, numSuspicious), rep(0, numInCurrentFold))
 
-		      Dmix <- dist(quantilesOriginalPlusBootstrapFold)
-		      Dmix <- as.matrix(Dmix)
+		      d <- distances::distances(quantilesOriginalPlusBootstrapFold)
+		      Dmix <- d[1:(dim(d)[2]), 1:(dim(d)[2])]
 		      originalDataFPStatisticsByFold <- matrix(0, nrow=numSuspicious, ncol=3)
 		      colnames(originalDataFPStatisticsByFold) <- c( "FPneighbourghood", "densityFP", "radius")
 
@@ -378,16 +478,8 @@ setMethod("compute.ORdensity",
 		    percentageBoostrapOverPositives <- (numORbootstrapBeyondCutPoint/numFolds)/(numSuspicious+numORbootstrapBeyondCutPoint/numFolds)
 		    
 		    diffOverExpectedFPNeighbours <- originalDataFPStatisticsMeans[, 1] - percentageBoostrapOverPositives * K
-		    ####
 		    labelGenes <- object@labels
-		    # genes <- (1:numGenes)[suspicious]
 		    genes <- labelGenes[suspicious]
-		    # print(genes)
-		    #finalResult <- cbind(genes, ORoriginal[suspicious], diffOverExpectedFPNeighbours, originalDataFPNeighboursStats, originalDataFPStatisticsMeans[, -1])
-		    #row.names(finalResult) <- NULL
-		    #colnames(finalResult) <- c("id", "OR", "DifExp",  "minFP", "FP", "maxFP", "dFP", "radius")
-		    #glfinalResult <<- finalResult
-		    #finalOrdering <- order(finalResult[, 3], -finalResult[, 2])
 		    finalResult <- data.frame("id"=genes, "OR"=ORoriginal[suspicious], "DifExp"=diffOverExpectedFPNeighbours,
 		                              "minFP"=originalDataFPNeighboursStats[,1], "FP"= originalDataFPNeighboursStats[,2],
 		                              "maxFP"=originalDataFPNeighboursStats[,3], "dFP"=originalDataFPStatisticsMeans[, 2],
@@ -395,21 +487,13 @@ setMethod("compute.ORdensity",
 		    finalResult$id <- as.character(finalResult$id)
 		    row.names(finalResult) <- NULL
 		    finalOrdering <- order(finalResult[, 3], -finalResult[, 2])
-		   # print(res[oo,])
-		   # print(numSuspicious)
-		   # print(c(ps, p0))
-		   # print(list("summary"=res[oo, ], "ns"=numSuspicious, "prop"=c(ps, p0)))
 		   })
 
 		   if (verbose) {print('Time after seventh chunk'); print(g)}
 
 		   object@out <- list("summary"=finalResult[finalOrdering, ], "ns"=numSuspicious, "prop"=c(percentageSuspiciousOverPositives, percentageBoostrapOverPositives , K))
-		   # object
 		}
 	)
-
-# a <- ORdensity(positive = matrix(rnorm(500), nrow=50, ncol=10), negative = matrix(rnorm(500), nrow=50, ncol=10))
-# a <- compute.ORdensity(a)
 
 setValidity("ORdensity", function(object) {
   valid <- TRUE
@@ -430,13 +514,12 @@ setValidity("ORdensity", function(object) {
 }
 )
 
-setMethod("initialize", "ORdensity", function(.Object, Exp_cond_1, Exp_cond_2, labels = NULL, B=100, scale=FALSE, alpha=0.05, 
+setMethod("initialize", "ORdensity", function(.Object, Exp_cond_1, Exp_cond_2, labels = rownames(Exp_cond_1), B=100, scale=FALSE, alpha=0.05, 
                                               fold=floor(B/10), probs=c(0.25, 0.5, 0.75), weights=c(1/4,1/2,1/4), K = 10, 
                                               out, OR, FP, dFP, char, bestK, verbose = FALSE, 
                                               parallel = FALSE, replicable = TRUE, seed = 0) {
   .Object@positive <- Exp_cond_1
   .Object@negative <- Exp_cond_2
-  # validObject(.Object)
   if (is.null(labels))
   { 
     .Object@labels<- paste("Gene", 1:nrow(Exp_cond_1), sep="")
@@ -464,7 +547,6 @@ setMethod("initialize", "ORdensity", function(.Object, Exp_cond_1, Exp_cond_2, l
   .Object@FP <- .Object@out$summary[, "FP"]
   .Object@dFP <- .Object@out$summary[, "dFP"]
   .Object@char <- data.frame(.Object@OR, .Object@FP, .Object@dFP)
-  require(cluster)
   .Object@bestK <- findbestK(.Object)
   .Object
 })
@@ -482,10 +564,13 @@ setMethod("findbestK",
           signature = "ORdensity",
           definition = function(object){
             s <- rep(NA, 10)
+            # len(object@char) could be less than 10
             for (k in 2:10)
             {
-              aux <- pam(dist(scale(object@char)), k)
-              s[k] <- mean(silhouette(aux)[, "sil_width"])
+              shit <<- object@char
+              d <- distances::distances(scale(object@char))
+              aux <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k, diss = TRUE)
+              s[k] <- mean(cluster::silhouette(aux)[, "sil_width"])
             }
             best_k <- which(s == max(s, na.rm = TRUE))
             return (best_k)
@@ -493,28 +578,68 @@ setMethod("findbestK",
 )
 
 #' @title findDEgenes
-#' @param 
-#' @return 
+#' @description This function clusters the potential differentially expressed (DE) genes among them 
+#' so that the real DE genes can be distinguish from the not DE genes.
+#' @param object An object of `ORdensity' class
+#' @param numclusters By default \code{NULL}, it inherits from the \code{object}. Optionally,
+#' an integer number indicating number of clusters.
+#' @details Once the potential DE genes are identified, the real DE genes and the not real DE genes or
+#' false positives must be distinguished. Since the real DE genes must have high OR values along with
+#' low FP and dFP values, and on the contrary, the false DE genes must have low OR values but high FP and dFP values,
+#' a clustering of all the potential DE genes is carried out. The clustering is based on build-on variables OR, FP and dFP 
+#' (see class \code{\link{ORdensity}}) which are scaled. The clustering algorithm is   \code{\link{pam}} and by default
+#' the number of clusters in the partition is obtained by \code{\link{silhouette}}. With parameter \code{numclusters} the number
+#' of clusters in the partition can be customized.
+#' @return  A list with \eqn{k} lists where \eqn{k} is the best number of clusters found. 
+#' The clusters are ordered based on their importance according to the mean OR values of the clusters 
+#' (greater is the mean OR value of the cluster more important are the genes in the cluster).
+#' The first one is the most important, the last one the less important. Each list has elements:
+#' \itemize{
+#' \item \code{numberOfGenes}: Number of genes in the cluster.
+#' \item \code{CharacteristicsCluster}: Matrix with mean values and standard deviation of variables OR, FP and dFP for each cluster.
+#' \item \code{Genes}: Identification of the genes in the cluster.
+#' }
 #' @examples
-#' 
+#' # Read data from 2 experimental conditions
+#' x <- example[, 3:32]
+#' y <- example[, 33:62]
+#' EXC.1 <- as.matrix(x)
+#' EXC.2 <- as.matrix(y)
+#' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
+#' out <- findDEgenes(myORdensity)
+#' # For instance, characteristics of cluster1, likely composed of true DE genes 
+#' out[[1]]
+
 #' @rdname findDEgenes
 #' @export
 setGeneric("findDEgenes", function(object, ...) standardGeneric("findDEgenes"))
 
 setMethod("findDEgenes",
           signature = "ORdensity",
-          definition = function(object, numclusters=NULL, verbose=FALSE){
+          definition = function(object, numclusters=NULL){
             KForClustering <- object@bestK
             if (!is.null(numclusters))
             {
               KForClustering <- numclusters
             }
-            clustering <- pam(dist(scale(object@char)), KForClustering)$clustering
+            prop <- object@out$prop
+            neighbours <- prop[3]
+            p0 <- prop[2]
+            preclustered_data <- as.data.frame(object@out$summary)
+            preclustered_data$DifExp <- NULL
+            preclustered_data$minFP <- NULL
+            preclustered_data$maxFP <- NULL
+            preclustered_data$radius <- NULL
+            preclustered_data$Strong <- ifelse(preclustered_data$FP == 0, "S", "-")
+            preclustered_data$Relaxed <- ifelse(preclustered_data$FP < p0 * neighbours, "R", "-")
+	    d <- distances::distances(scale(object@char))
+            clustering <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], KForClustering, diss = TRUE)$clustering
             result_prov <- list()
             meanOR <- list()
             for (k in 1:KForClustering)
             {
-              result_prov[[k]] <- object@out$summary[clustering==k,]
+              result_prov[[k]] <- preclustered_data[clustering==k,] #object@out$summary[clustering==k,]
+              result_prov[[k]] <- result_prov[[k]][,!colnames(result_prov[[k]]) %in% c("DifExp",  "minFP", "maxFP", "radius")]
               meanOR[[k]] <- mean(result_prov[[k]][,'OR'])
             }
             clusters_ordering <- order(as.numeric(meanOR), decreasing = TRUE)
@@ -523,26 +648,10 @@ setMethod("findDEgenes",
             {
               clusters[[k]] <- result_prov[[clusters_ordering[k]]]
             }
-            DFgenes <- list()
-            for (k in 1:KForClustering)
-            {
-              # DFgenes[[k]] <- list("cluster_number"=k, "genes"=sort(clusters[[k]][,'id']), "meanOR"=mean(clusters[[k]][,'OR']))
-              if (verbose)
-              {
-                DFgenes[[k]] <- list("cluster_number"=k, "numberOfGenes"=length(clusters[[k]][,'id']), 
-                                     "meanOR"=mean(clusters[[k]][,'OR']), "genes"=sort(clusters[[k]][,'id']))
-              }
-              else
-              {
-                DFgenes[[k]] <- list("cluster_number"=k, "numberOfGenes"=length(clusters[[k]][,'id']), "meanOR"=mean(clusters[[k]][,'OR']))
-              }
-            }
-            cat("The ORdensity method has found that the optimal clustering of the data consists of",object@bestK,"clusters\n")
-            if (!is.null(numclusters))
-            {
-              cat("The user has chosen a clustering of",numclusters,"clusters\n")
-            }
-            # return(list("DFgenes"=DFgenes,"clusters"=clusters))
-            return(DFgenes)
+            prop <- object@out$prop
+            neighbours <- prop[3]
+            p0 <- prop[2]
+            cat("The ORdensity method has found that the optimal clustering of the data consists of", object@bestK,"clusters\n\n")
+            return(list("neighbours"=neighbours, "expectedFalsePositiveNeighbours"=p0*neighbours, "clusters"=clusters))
           }
 )
