@@ -11,10 +11,10 @@ It makes use of the ORdensity method and the associated FP and dFP values to det
 most likely true positives.
 }
 \seealso{
-\code{\link{summary}}, \code{\link{preclusteredData}}, 
-\code{\link{plotFPvsOR}}, \code{\link{silhouetteAnalysis}},
+\code{\link{summary.ORdensity}}, \code{\link{preclusteredData}}, 
+\code{\link{plot.ORdensity}}, \code{\link{silhouetteAnalysis}},
 \code{\link{clusplotk}}, \code{\link{compute.ORdensity}}, 
-\code{\link{findbestK}}, \code{\link{findDEgenes}}
+\code{\link{findbestK}}, \code{\link{findDEgenes}}, \code{\link{ORdensity}}
 }
 \author{
 Jose Maria Martinez Otzeta \email{josemaria.martinezo@ehu.eus}

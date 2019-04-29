@@ -6,7 +6,17 @@
 \title{Class for representing ORdensity}
 \description{
 Class for representing ORdensity
+
+An S4 class to represent an ORdensity object.
 }
+\section{Slots}{
+
+\describe{
+\item{\code{positive}}{}
+
+\item{\code{negative}}{}
+}}
+
 \author{
 Itziar Irigoien, Concepcion Arenas, Jose Maria Martinez-Otzeta
 }

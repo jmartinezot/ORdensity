@@ -16,6 +16,12 @@
 #' @export preclusteredData
 #' 
 
+#' @title ORdensity-class
+#' @description An S4 class to represent an ORdensity object.
+#' @slot positive 
+#' @slot negative  
+#' @rdname ORdensity-class
+#' @export
 ORdensity <- setClass(
 	"ORdensity",
 	slots = c(positive="matrix", negative="matrix", labels="character", 
@@ -31,11 +37,37 @@ ORdensity <- setClass(
 )
 
 #' @title summary.ORdensity
-#' @description
-#' @param
-#' @details
-#' @return
+#' @description This function clusters the potential differentially expressed (DE) genes among them 
+#' so that the real DE genes can be distinguish from the not DE genes.
+#' @param object An object of `findDEgenes' class
+#' @param numclusters By default \code{NULL}, it inherits from the \code{object}. Optionally,
+#' an integer number indicating number of clusters.
+#' @details Once the potential DE genes are identified, the real DE genes and the not real DE genes or
+#' false positives must be distinguished. Since the real DE genes must have high OR values along with
+#' low FP and dFP values, and on the contrary, the false DE genes must have low OR values but high FP and dFP values,
+#' a clustering of all the potential DE genes is carried out. The clustering is based on build-on variables OR, FP and dFP 
+#' (see class \code{ORdensity}) which are scaled. The clustering algorithm is   \code{\link{pam}} and by default
+#' the number of clusters in the partition is obtained by \code{\link{silhouette}}. With parameter \code{numclusters} the number
+#' of clusters in the partition can be customized.
+#' @return  A list with \eqn{k} lists where \eqn{k} is the best number of clusters found. 
+#' The clusters are ordered based on their importance according to the mean OR values of the clusters 
+#' (greater is the mean OR value of the cluster more important are the genes in the cluster).
+#' The first one is the most important, the last one the less important. Each list has elements:
+#' \itemize{
+#' \item \code{numberOfGenes}: Number of genes in the cluster.
+#' \item \code{CharacteristicsCluster}: Matrix with mean values and standard deviation of variables OR, FP and dFP for each cluster.
+#' \item \code{Genes}: Identification of the genes in the cluster.
+#' }
 #' @examples
+#' # Read data from 2 experimental conditions
+#' x <- example[, 3:32]
+#' y <- example[, 33:62]
+#' EXC.1 <- as.matrix(x)
+#' EXC.2 <- as.matrix(y)
+#' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
+#' out <- findDEgenes(myORdensity)
+#' # For instance, general characteristics of cluster1, likely composed of true DE genes 
+#' out$Cluster1
 #' @rdname summary.ORdensity
 #' @export
 setGeneric("summary.ORdensity", function(object, ...) standardGeneric("summary.ORdensity"))
@@ -404,7 +436,7 @@ setMethod("compute.ORdensity",
 		   cutPoint <- (sort(c(ORbootstrap)))[floor((1-alpha)*numGenes*B)]
 
 		# Find individuals beyond threshold
-		   suspicious <<- ORoriginal > cutPoint
+		   suspicious <- ORoriginal > cutPoint
 		   numSuspicious <- sum(suspicious)
 
 		   # the indices are in the form (case, bootstrap_sample)
@@ -421,7 +453,7 @@ setMethod("compute.ORdensity",
 
 		  if (verbose) {print('Time after fifth chunk'); print(e)}
 
-		  globalquantilesDifferencesWeighted.null <<- quantilesDifferencesWeighted.null
+		  globalquantilesDifferencesWeighted.null <- quantilesDifferencesWeighted.null
 		  
 		  f <- system.time ({
 		  for (j in 1:numFolds)
@@ -556,7 +588,7 @@ setMethod("findbestK",
             # len(object@char) could be less than 10
             for (k in 2:10)
             {
-              shit <<- object@char
+              shit <- object@char
               d <- distances::distances(scale(object@char))
               aux <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k, diss = TRUE)
               s[k] <- mean(cluster::silhouette(aux)[, "sil_width"])
