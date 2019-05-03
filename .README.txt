@@ -66,8 +66,10 @@ x <- example[, 3:32]
 y <- example[, 33:62]
 positive <- as.matrix(x)
 negative <- as.matrix(y)
+set.seed(0)
 randomA <- matrix(rnorm(30*100), nrow = 100)
 randomB <- matrix(rnorm(30*100), nrow = 100)
+myORdensity <- new("ORdensity", Exp_cond_1 = randomA, Exp_cond_2 = randomB)
 genLabels <- paste("SimulatedGene", 1:nrow(positive), sep="")
 # myORdensity <- new("ORdensity", positive = positive, negative = negative, genIDs = genLabels, parallel = TRUE)
 myORdensity <- new("ORdensity", Exp_cond_1 = positive, Exp_cond_2 = negative, parallel = TRUE)

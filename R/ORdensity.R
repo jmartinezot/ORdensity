@@ -1,21 +1,44 @@
-#' @title
-#' Class for representing ORdensity
 #'
-#' @description
-#' Class for representing ORdensity
+#' @title An S4 class for representing potential differentially expressed genes
+#'
+#' @description Object of class ORdensity includes all potential diffentially expressed genes
+#' given miroarray data measured in two experimental conditions.
 #'
 #' @name ORdensity
 #' @rdname ORdensity
 #' @exportClass ORdensity
-#'
-#' @author Itziar Irigoien, Concepcion Arenas, Jose Maria Martinez-Otzeta
-#'
+#' @references Irigoien and Arenas (2018)
+#' Identification of differentially expressed genes by means of outlier detection.
+#' \emph{BMC Bioinformatics}, 19:317
+#' @author Jose Maria Martinez-Otzeta, Itziar Irigoien, Concepcion Arenas
 #' @export silhouetteAnalysis
 #' @export compute.ORdensity
 #' @export findDEgenes
-#' @export summary
 #' @export preclusteredData
-#' 
+#'
+#' @slot positive Matrix including microarray data measured under experimental condition 1.
+#' @slot negative matrix including microarray data measured under experimental condition 2.
+#' @slot labels  Vector of characters identifying the genes, by default
+#' rownames(positive) is inherited. If NULL,
+#' the genes are named ‘Gene1’, ..., ‘Genen' according to the order given in \code{positive}.
+#' @slot B Numeric value indicating the number of bootstrap iteration. By default, \code{B}=100.
+#' @slot scale Logical value to indicate whether the scaling of the difference of quatiles should be done.
+#' @slot alpha Numeric value to control the bootstrap threshold. By default 0.05.
+#' @slot fold Numeric value, by default \code{fold}=10. It controls the number of partitions.
+#' @slot probs Vector of numerics. It sets the quantiles to be considered. By default
+#' \code{probs = c(0.25, 0.5, 0.75)}.
+#' @slot weights Vector of numerics. It controls the weights given to the quantiles set in \code{probs}. 
+#' By default  \code{weights = c(1/4, 1/2, 1/4)}.
+#' @slot K Numeric value to set the number of nearest neighbours. By default \code{K=10}.
+#' @slot out List containing the potential DE genes and their characteristics.
+#' ...
+#' @examples
+#' # To create an instance of a class ORdensity given data from 2 experimental conditions
+#' x <- example[, 3:32]
+#' y <- example[, 33:62]
+#' EXC.1 <- as.matrix(x)
+#' EXC.2 <- as.matrix(y)
+#' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
 
 ORdensity <- setClass(
 	"ORdensity",
@@ -31,11 +54,7 @@ ORdensity <- setClass(
 	                 verbose=logical(), parallel=logical(), replicable=logical(), seed=numeric())
 )
 
-# setGeneric("summary")
-
-# setGeneric("summary.ORdensity", function(object, ...) standardGeneric("summary.ORdensity"))
-
-#' @title summary
+#' @title summary.ORdensity
 #' @description This function clusters the potential differentially expressed (DE) genes among them 
 #' so that the real DE genes can be distinguish from the not DE genes.
 #' @param object An object of `findDEgenes' class
@@ -64,12 +83,14 @@ ORdensity <- setClass(
 #' EXC.1 <- as.matrix(x)
 #' EXC.2 <- as.matrix(y)
 #' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
-#' out <- summary(myORdensity)
-#' out
-
+#' out <- findDEgenes(myORdensity)
+#' # For instance, general characteristics of cluster1, likely composed of true DE genes 
+#' out$Cluster1
 #' @rdname summary.ORdensity
 #' @export
-setMethod("summary",
+setGeneric("summary.ORdensity", function(object, ...) standardGeneric("summary.ORdensity"))
+
+setMethod("summary.ORdensity",
           signature = "ORdensity",
           definition = function(object, numclusters=NULL){
             KForClustering <- object@bestK
@@ -114,7 +135,7 @@ setMethod("summary",
               cat("The user has chosen a clustering of",numclusters,"clusters\n")
             }
             names(DFgenes) <- paste("Cluster", 1:KForClustering, sep="")
-            return(DFgenes)
+            return (DFgenes)
           }
 )
 
@@ -178,19 +199,37 @@ setMethod("show",
            }
 )
 
-#' @title plot
-#' @param 
-#' @return 
+#' @title plot.ORdensity
+#' @description This function plots the \code{\link{silhouette}} values of successive clusterings. 
+#' @param object An object of \code{\link{ORdensity}} class
+#' @param K Integer value to indicate the maximum number of partitions to check 
+#' along the successive clusterings. By default \code{K=10}.
+#' @details Once the potential DE genes are identified, the real DE genes and the not real DE genes or
+#' false positives must be distinguished and it is carried out clustering  all the potential DE genes  
+#' (see \code{\link{findDEgenes}}). The clustering algorithm is   \code{\link{pam}} and by default
+#' the number of clusters in the partition is obtained by \code{\link{silhouette}}. 
+#' Nevertheless, \code{silhouetteAnalysis} allows to check whether there is a clear best number for the partition
+#' or the  average silhouettes values are
+#' rather similar. 
+#' #' @references Rousseeuw, P. J. (1987). Silhouettes: a graphical aid to the interpretation and validation of cluster analysis. Journal of computational and applied mathematics, 20, 53-65.
+#' @return  Displays a plot of the average silhouette width along with the number of clusters in the partition. 
+#' If assigned to an object, it returns a vector of length \code{K} with the average
+#' silhouette values.
 #' @examples
-#' 
-#' @rdname plot
+#' # Read data from 2 experimental conditions
+#' x <- example[, 3:32]
+#' y <- example[, 33:62]
+#' EXC.1 <- as.matrix(x)
+#' EXC.2 <- as.matrix(y)
+#' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
+#' silhouetteAnalysis(myORdensity)
+#' @rdname plot.ORdensity
 #' @export
-#setGeneric("plotFPvsOR", function(object, ...) standardGeneric("plotFPvsOR"))
+setGeneric("plot.ORdensity", function(object, k = object@bestK, ...) standardGeneric("plot.ORdensity"))
 
-setMethod("plot",
+setMethod("plot.ORdensity",
   signature = "ORdensity",
-  definition = function(x, y = object@bestK, k = object@bestK, ...){
-    object <- x
+  definition = function(object, k = object@bestK, ...){
     d <- distances::distances(scale(object@char))
     clustering <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k, diss = TRUE)$clustering
     legend_text <- sprintf("cluster %s",seq(1:k))
@@ -432,7 +471,7 @@ setMethod("compute.ORdensity",
 
 		  if (verbose) {print('Time after fifth chunk'); print(e)}
 
-		  globalquantilesDifferencesWeighted.null <<- quantilesDifferencesWeighted.null
+		  globalquantilesDifferencesWeighted.null <- quantilesDifferencesWeighted.null
 		  
 		  f <- system.time ({
 		  for (j in 1:numFolds)
@@ -567,7 +606,7 @@ setMethod("findbestK",
             # len(object@char) could be less than 10
             for (k in 2:10)
             {
-              shit <<- object@char
+              shit <- object@char
               d <- distances::distances(scale(object@char))
               aux <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k, diss = TRUE)
               s[k] <- mean(cluster::silhouette(aux)[, "sil_width"])

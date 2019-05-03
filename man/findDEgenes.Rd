@@ -7,7 +7,7 @@
 findDEgenes(object, ...)
 }
 \arguments{
-\item{object}{An object of `findDEgenes' class}
+\item{object}{An object of `ORdensity' class}
 
 \item{numclusters}{By default \code{NULL}, it inherits from the \code{object}. Optionally,
 an integer number indicating number of clusters.}

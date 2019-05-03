@@ -8,18 +8,23 @@
 preclusteredData(object, ...)
 }
 \arguments{
-\item{object}{Object of class ORdensity}
+\item{object}{Object of class \code{\link{ORdensity}}}
 }
 \value{
 \code{\link{data.frame}} with all potential DE genes
 }
 \description{
-This function returns offers the description of all the identified 
-potential DE genes in terms of variables OR, FP, and dFP in one only table.
+This function returns the description of all the identified 
+potential DE genes in terms of variables OR, FP, and dFP in one only table so that 
+the interesed user can perform its own clustering analysis.
 }
 \examples{
-randomA <- matrix(rnorm(30*1000), nrow = 1000)
-randomB <- matrix(rnorm(30*1000), nrow = 1000)
-myORdensity <- new("ORdensity", Exp_cond_1 = randomA, Exp_cond_2 = randomB, parallel = TRUE)
+# Read data from 2 experimental conditions
+x <- example[, 3:32]
+y <- example[, 33:62]
+EXC.1 <- as.matrix(x)
+EXC.2 <- as.matrix(y)
+myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
+# data.frame with all potential DE genes:
 preclusteredData(myORdensity)
 }
