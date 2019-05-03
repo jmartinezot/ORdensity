@@ -1,27 +1,45 @@
-#' @title
-#' Class for representing ORdensity
 #'
-#' @description
-#' Class for representing ORdensity
+#' @title An S4 class for representing potential differentially expressed genes
+#'
+#' @description Object of class ORdensity includes all potential diffentially expressed genes
+#' given miroarray data measured in two experimental conditions.
 #'
 #' @name ORdensity
 #' @rdname ORdensity
 #' @exportClass ORdensity
-#'
-#' @author Itziar Irigoien, Concepcion Arenas, Jose Maria Martinez-Otzeta
-#'
+#' @references Irigoien and Arenas (2018)
+#' Identification of differentially expressed genes by means of outlier detection.
+#' \emph{BMC Bioinformatics}, 19:317
+#' @author Jose Maria Martinez-Otzeta, Itziar Irigoien, Concepcion Arenas
 #' @export silhouetteAnalysis
 #' @export compute.ORdensity
 #' @export findDEgenes
 #' @export preclusteredData
-#' 
+#'
+#' @slot positive Matrix including microarray data measured under experimental condition 1.
+#' @slot negative matrix including microarray data measured under experimental condition 2.
+#' @slot labels  Vector of characters identifying the genes, by default
+#' rownames(positive) is inherited. If NULL,
+#' the genes are named ‘Gene1’, ..., ‘Genen' according to the order given in \code{positive}.
+#' @slot B Numeric value indicating the number of bootstrap iteration. By default, \code{B}=100.
+#' @slot scale Logical value to indicate whether the scaling of the difference of quatiles should be done.
+#' @slot alpha Numeric value to control the bootstrap threshold. By default 0.05.
+#' @slot fold Numeric value, by default \code{fold}=10. It controls the number of partitions.
+#' @slot probs Vector of numerics. It sets the quantiles to be considered. By default
+#' \code{probs = c(0.25, 0.5, 0.75)}.
+#' @slot weights Vector of numerics. It controls the weights given to the quantiles set in \code{probs}. 
+#' By default  \code{weights = c(1/4, 1/2, 1/4)}.
+#' @slot K Numeric value to set the number of nearest neighbours. By default \code{K=10}.
+#' @slot out List containing the potential DE genes and their characteristics.
+#' ...
+#' @examples
+#' # To create an instance of a class ORdensity given data from 2 experimental conditions
+#' x <- example[, 3:32]
+#' y <- example[, 33:62]
+#' EXC.1 <- as.matrix(x)
+#' EXC.2 <- as.matrix(y)
+#' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
 
-#' @title ORdensity-class
-#' @description An S4 class to represent an ORdensity object.
-#' @slot positive 
-#' @slot negative  
-#' @rdname ORdensity-class
-#' @export
 ORdensity <- setClass(
 	"ORdensity",
 	slots = c(positive="matrix", negative="matrix", labels="character", 

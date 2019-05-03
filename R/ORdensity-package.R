@@ -8,8 +8,8 @@
 #' \code{\link{plot.ORdensity}}, \code{\link{silhouetteAnalysis}},
 #' \code{\link{clusplotk}}, \code{\link{compute.ORdensity}}, 
 #' \code{\link{findbestK}}, \code{\link{findDEgenes}}, \code{\link{ORdensity}}
-#' @name ORdensity-package
-#' @aliases ORdensity
+#' @name ORdensity
+#' @aliases ORdensity-package
 #' @docType package
 #' @author Jose Maria Martinez Otzeta \email{josemaria.martinezo@@ehu.eus}
 NULL
