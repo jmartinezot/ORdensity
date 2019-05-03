@@ -1,2 +1,2 @@
-example <- read.table("example.dat", header=TRUE)
-usethis::use_data(example)
+simexpr <- read.table("simexpr.dat", header=TRUE)
+usethis::use_data(simexpr)

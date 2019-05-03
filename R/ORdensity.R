@@ -34,8 +34,8 @@
 #' ...
 #' @examples
 #' # To create an instance of a class ORdensity given data from 2 experimental conditions
-#' x <- example[, 3:32]
-#' y <- example[, 33:62]
+#' x <- simexpr[, 3:32]
+#' y <- simexpr[, 33:62]
 #' EXC.1 <- as.matrix(x)
 #' EXC.2 <- as.matrix(y)
 #' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
@@ -78,8 +78,8 @@ ORdensity <- setClass(
 #' }
 #' @examples
 #' # Read data from 2 experimental conditions
-#' x <- example[, 3:32]
-#' y <- example[, 33:62]
+#' x <- simexpr[, 3:32]
+#' y <- simexpr[, 33:62]
 #' EXC.1 <- as.matrix(x)
 #' EXC.2 <- as.matrix(y)
 #' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
@@ -150,8 +150,8 @@ setMethod("summary.ORdensity",
 #' 
 #' @examples
 #' # Read data from 2 experimental conditions
-#' x <- example[, 3:32]
-#' y <- example[, 33:62]
+#' x <- simexpr[, 3:32]
+#' y <- simexpr[, 33:62]
 #' EXC.1 <- as.matrix(x)
 #' EXC.2 <- as.matrix(y)
 #' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
@@ -217,8 +217,8 @@ setMethod("show",
 #' silhouette values.
 #' @examples
 #' # Read data from 2 experimental conditions
-#' x <- example[, 3:32]
-#' y <- example[, 33:62]
+#' x <- simexpr[, 3:32]
+#' y <- simexpr[, 33:62]
 #' EXC.1 <- as.matrix(x)
 #' EXC.2 <- as.matrix(y)
 #' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
@@ -257,8 +257,8 @@ setMethod("plot.ORdensity",
 #' silhouette values.
 #' @examples
 #' # Read data from 2 experimental conditions
-#' x <- example[, 3:32]
-#' y <- example[, 33:62]
+#' x <- simexpr[, 3:32]
+#' y <- simexpr[, 33:62]
 #' EXC.1 <- as.matrix(x)
 #' EXC.2 <- as.matrix(y)
 #' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
@@ -640,8 +640,8 @@ setMethod("findbestK",
 #' }
 #' @examples
 #' # Read data from 2 experimental conditions
-#' x <- example[, 3:32]
-#' y <- example[, 33:62]
+#' x <- simexpr[, 3:32]
+#' y <- simexpr[, 33:62]
 #' EXC.1 <- as.matrix(x)
 #' EXC.2 <- as.matrix(y)
 #' myORdensity <- new("ORdensity", Exp_cond_1 = EXC.1, Exp_cond_2 = EXC.2)
