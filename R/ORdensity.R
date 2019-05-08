@@ -129,7 +129,8 @@ setMethod("summary.ORdensity",
               DFgenes[[k]] <- list( "numberOfGenes"=length(clusters[[k]][,'id']), 
                                     "CharacteristicsCluster"=CharClus[[k]], "genes"=sort(clusters[[k]][,'id']))
             }
-            cat("The ORdensity method has found that the optimal clustering of the data consists of",object@bestK,"clusters\n")
+            cat("The ORdensity method has found that the optimal clustering of the data consists of",object@bestK,
+		"clusters, computed from a maximum of", object@K,"when the ORdensity object was created\n")
             if (!is.null(numclusters))
             {
               cat("The user has chosen a clustering of",numclusters,"clusters\n")
@@ -602,16 +603,16 @@ setGeneric("findbestK", function(object, ...) standardGeneric("findbestK"))
 setMethod("findbestK",
           signature = "ORdensity",
           definition = function(object){
-            s <- rep(NA, 10)
+            s <- rep(NA, object@K)
             # len(object@char) could be less than 10
-            for (k in 2:10)
+            for (k in 2:object@K)
             {
-              shit <- object@char
               d <- distances::distances(scale(object@char))
               aux <- cluster::pam(d[1:(dim(d)[2]), 1:(dim(d)[2])], k, diss = TRUE)
               s[k] <- mean(cluster::silhouette(aux)[, "sil_width"])
             }
             best_k <- which(s == max(s, na.rm = TRUE))
+	    object@bestK <- best_k
             return (best_k)
           }
 )
